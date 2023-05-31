@@ -107,6 +107,7 @@ class Radar:
         self._send_command(command)
         time.sleep(0.01)  # XXX: Serious? It could be affect by the baudrate
 
+    @logger.catch(reraise=True)
     def _send_command_and_check_output(self, command: str) -> str:
         self._send_command_safe(command)
         self._send_command("")  # Force a `mmwDemo:/>\n` response
@@ -115,9 +116,9 @@ class Radar:
         logger.debug(f"{self._config_port} - raw resp: {response}")
 
         if not response:
-            err = "No response from radar, try to increase timeout"
-            logger.error(f"{self._config_port} - {err}")
-            raise RuntimeError(err)
+            raise RuntimeError(
+                f"{self._config_port} - No response from radar, try to increase timeout"
+            )
 
         response = re.findall(RADAR_OUTPUT_REGEX, response.decode("utf-8"), re.DOTALL)[
             0
@@ -125,8 +126,9 @@ class Radar:
 
         logger.info(f"{self._config_port} - response: {response}")
         if "Done" not in response:
-            logger.error(f"{self._config_port} - command {command} failed: {response}")
-            raise RuntimeError(f"Command {command} failed: {response}")
+            raise RuntimeError(
+                f"{self._config_port} - Command `{command}` failed: {response}"
+            )
         return response
 
     def _flush_radar_config_serial_buffer(self) -> None:
@@ -160,10 +162,10 @@ class Radar:
         self._config_serial.close()
         self._data_serial.close()
 
+    @logger.catch(reraise=True)
     def config(self) -> None:
         if not self._initialized:
-            logger.critical(f"{self._config_port} - Radar not initialized")
-            raise Exception("Radar not initialized")
+            raise Exception(f"{self._config_port} - Radar not initialized")
 
         for command in self._config:
             # We need to replace frameCfg `number of frames` with `self._capture_frames`
@@ -179,17 +181,17 @@ class Radar:
 
             self._send_command_and_check_output(command)
 
+    @logger.catch(reraise=True)
     def start_sensor(self) -> None:
         if not self._initialized:
-            logger.critical(f"{self._config_port} - Radar not initialized")
-            raise Exception("Radar not initialized")
+            raise Exception(f"{self._config_port} - Radar not initialized")
 
         self._send_command_and_check_output("sensorStart")
 
+    @logger.catch(reraise=True)
     def stop_sensor(self) -> None:
         if not self._initialized:
-            logger.critical(f"{self._config_port} - Radar not initialized")
-            raise Exception("Radar not initialized")
+            raise Exception(f"{self._config_port} - Radar not initialized")
 
         self._send_command_and_check_output("sensorStop")
 
