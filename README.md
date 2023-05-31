@@ -1,6 +1,9 @@
 Millimeter-wave Capture Standard (mmwave-capture-std)
 =====================================================
 
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![License: BSD 3-Clause-Clear](https://img.shields.io/badge/License-BSD%203--Clause--Clear-green.svg)](https://spdx.org/licenses/BSD-3-Clause-Clear.html)
+
 **mmwave-capture-std** is a *fast*, *reliable*, and *replicable*
 Texas Instruments millimeter-wave capture toolkit.
 
