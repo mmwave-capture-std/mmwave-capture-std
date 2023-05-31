@@ -4,6 +4,17 @@ Millimeter-wave Capture Standard (mmwave-capture-std)
 **mmwave-capture-std** is a *fast*, *reliable*, and *replicable*
 Texas Instruments millimeter-wave capture toolkit.
 
+Contribute
+----------
+
+Use the following snippet to setup your development environment:
+
+```
+git clone <repo-url>
+cd mmwave-capture-std
+poetry install # Prepare env and install deps
+poetry run pre-commit install # Install pre-commit hooks
+```
 
 LICENSE
 -------
