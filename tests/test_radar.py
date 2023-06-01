@@ -72,6 +72,13 @@ def radar(radar_config):
     )
 
 
+def test_radar_setter(rada_uninit):
+    new_capture_frames = 20
+    assert rada_uninit.capture_frames == 10
+    rada_uninit.capture_frames = new_capture_frames
+    assert rada_uninit.capture_frames == new_capture_frames
+
+
 def test_radar_uninit(radar_uninit):
     assert radar_uninit._initialized == False
     assert radar_uninit._config_serial.is_open == False

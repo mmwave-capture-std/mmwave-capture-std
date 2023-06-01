@@ -43,6 +43,23 @@ def dca():
     return dca1000.DCA1000()
 
 
+def test_dca_config(dca):
+    new_dca_ip = "192.168.33.181"
+    assert dca.config.dca_ip == "192.168.33.180"
+    dca.config.dca_ip = new_dca_ip
+    assert dca.config.dca_ip == new_dca_ip
+
+    new_dca_config_port = 4099
+    assert dca.config.dca_config_port == 4096
+    dca.config.dca_config_port = new_dca_config_port
+    assert dca.config.dca_config_port == new_dca_config_port
+
+    new_packet_delay_us = 25
+    assert dca.config.packet_delay_us == 5
+    dca.config.packet_delay_us = new_packet_delay_us
+    assert dca.config.packet_delay_us == new_packet_delay_us
+
+
 def test_cmd_reset_fpga(dca):
     assert dca.reset_fpga() == True
 

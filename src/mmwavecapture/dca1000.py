@@ -114,9 +114,17 @@ class DCA1000Config:
     def dca_ip(self) -> str:
         return self._config["ethernetConfig"]["DCA1000IPAddress"]
 
+    @dca_ip.setter
+    def dca_ip(self, ip: str) -> None:
+        self._config["ethernetConfig"]["DCA1000IPAddress"] = ip
+
     @property
     def dca_config_port(self) -> int:
         return self._config["ethernetConfig"]["DCA1000ConfigPort"]
+
+    @dca_config_port.setter
+    def dca_config_port(self, port: int) -> None:
+        self._config["ethernetConfig"]["DCA1000ConfigPort"] = port
 
     @property
     def dca_data_port(self) -> int:
@@ -146,13 +154,8 @@ class DCA1000Config:
     def packet_delay_us(self) -> int:
         return self._config["packetDelay_us"]
 
-    def set_dca_ip(self, ip: str) -> None:
-        self._config["ethernetConfig"]["DCA1000IPAddress"] = ip
-
-    def set_dca_port(self, port: int) -> None:
-        self._config["ethernetConfig"]["DCA1000ConfigPort"] = port
-
-    def set_packet_delay(self, delay: int) -> None:
+    @packet_delay_us.setter
+    def packet_delay_us(self, delay: int) -> None:
         self._config["packetDelay_us"] = delay
 
 

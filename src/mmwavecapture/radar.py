@@ -93,7 +93,8 @@ class Radar:
     def capture_frames(self) -> int:
         return self._capture_frames
 
-    def set_capture_frames(self, capture_frames: int) -> None:
+    @capture_frames.setter
+    def capture_frames(self, capture_frames: int) -> None:
         self._capture_frames = capture_frames
 
     def _send_command(self, command: str) -> None:
