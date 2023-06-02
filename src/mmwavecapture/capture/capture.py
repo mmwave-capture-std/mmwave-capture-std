@@ -99,13 +99,13 @@ class Capture:
 
         # Create directory for `Capture`
         self._base_path.mkdir(exist_ok=True)
-        logger.info(f"Capture directory created at `{self._base_path}/`")
+        logger.debug(f"Capture directory created at `{self._base_path}/`")
 
     def add_capture_hardware(self, hw: CaptureHardware) -> None:
         # Creat directory for capture hardware
         hardware_base_path = self._base_path / hw.hw_name
         hardware_base_path.mkdir(exist_ok=True)
-        logger.info(f"Capture hardware directory created at `{hardware_base_path}/`")
+        logger.debug(f"Capture hardware directory created at `{hardware_base_path}/`")
 
         hw.base_path = hardware_base_path
 
@@ -196,8 +196,8 @@ class CaptureManager:
             )
 
         # Unfotunately, we will need to log them here
-        logger.info(f"Dataset directory created at `{self._dataset_dir}/`")
-        logger.info(f"Capture directory created at `{self._capture_dir}/`")
+        logger.debug(f"Dataset directory created at `{self._dataset_dir}/`")
+        logger.debug(f"Capture directory created at `{self._capture_dir}/`")
 
     def _load_config(self, path: pathlib.Path) -> None:
         with open(path) as f:

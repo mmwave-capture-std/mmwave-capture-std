@@ -112,9 +112,7 @@ class Radar:
         )
 
     def _send_command(self, command: str) -> None:
-        # Put command "" to `logger.debug`
-        log = logger.info if command else logger.debug
-        log(f"{self._config_port} - command: {command}")
+        logger.trace(f"{self._config_port} - command: {command}")
 
         self._config_serial.write(f"{command}\n".encode("utf-8"))
 
@@ -128,7 +126,7 @@ class Radar:
         self._send_command("")  # Force a `mmwDemo:/>\n` response
 
         response = self._config_serial.read_until(b"mmwDemo:/>\n")
-        logger.debug(f"{self._config_port} - raw resp: {response}")
+        logger.trace(f"{self._config_port} - raw resp: {response}")
 
         if not response:
             raise RuntimeError(
@@ -139,7 +137,7 @@ class Radar:
             0
         ].strip()
 
-        logger.info(f"{self._config_port} - response: {response}")
+        logger.trace(f"{self._config_port} - response: {response}")
         if "Done" not in response:
             raise RuntimeError(
                 f"{self._config_port} - Command `{command}` failed: {response}"
@@ -150,7 +148,7 @@ class Radar:
         self._send_command("")
 
         flushed = self._config_serial.read_until(b"mmwDemo:/>\n")
-        logger.info(f"{self._config_port} - flush: {flushed}")
+        logger.trace(f"{self._config_port} - flush: {flushed}")
 
     def get_radar_status(self):
         resp = self._send_command_and_check_output("queryDemoStatus")
