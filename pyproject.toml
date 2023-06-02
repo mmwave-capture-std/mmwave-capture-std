@@ -7,6 +7,9 @@ license = "BSD-3-Clause-Clear"
 readme = "README.md"
 packages = [{include = "mmwavecapture", from = "src" }]
 
+[tool.poetry.scripts]
+mmwavecapture-std = "mmwavecapture.cli:cli"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 pytest = "^7.3.1"
@@ -19,6 +22,7 @@ netifaces = "0.11.0"
 toml = "^0.10.2"
 pyrealsense2 = "^2.53.1.4623"
 opencv-python = "^4.7.0.72"
+click = "^8.1.3"
 
 [build-system]
 requires = ["poetry-core"]
