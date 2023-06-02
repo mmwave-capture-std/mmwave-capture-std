@@ -1,0 +1,21 @@
+dataset_dir = "example_dataset"
+
+[logging.stderr]
+enable = true
+level = "INFO"
+
+[logging.logfile]
+enable = true
+level = "TRACE"
+serialize = true
+
+[hardware.iwr1843]
+hw_def_class = "mmwavecapture.capture.RadarDCA"  # It should be `module.class_name`
+dca_eth_interface = "enp5s0"
+radar_config_port = "/dev/ttyACM0"
+radar_data_port = "/dev/ttyACM1"
+dca_ip = "192.168.33.180"
+dca_config_port = 4096
+host_ip = "192.168.33.30"
+radar_config_filename = "tests/configs/xwr18xx_profile_2023_01_01T00_00_00_000.cfg"
+capture_frames = 10
