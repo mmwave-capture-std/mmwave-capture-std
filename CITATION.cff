@@ -1,0 +1,24 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Millimeter-wave Capture Standard (mmwave-capture-std)
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Shao-Jung
+    name-particle: Louie
+    family-names: Lu
+    email: louielu@cs.unc.edu
+identifiers:
+  - type: url
+    value: >-
+      https://github.com/mmwave-capture-std/mmwave-capture-std
+repository-code: 'https://github.com/mmwave-capture-std/mmwave-capture-std'
+url: 'https://github.com/mmwave-capture-std'
+abstract: >-
+  mmwave-capture-std is a fast, reliable, and replicable
+  Texas Instruments millimeter-wave capture toolkit.
+license: BSD-3-Clause-Clear
