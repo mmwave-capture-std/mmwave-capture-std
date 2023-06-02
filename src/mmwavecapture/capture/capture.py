@@ -61,6 +61,11 @@ class CaptureHardware(abc.ABC):
 
     @base_path.setter
     def base_path(self, base_path: pathlib.Path) -> None:
+        if not base_path.exists():
+            raise ValueError(f"Base path `{base_path}/` does not exist")
+        if not base_path.is_dir():
+            raise ValueError(f"Base path `{base_path}/` is not a directory")
+
         self._base_path = base_path
 
     @abc.abstractmethod
