@@ -47,9 +47,11 @@ warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = [
-    "asgiref.*",
-    "dotenv.*",
-    "cryptography.*",
-    "importlib_metadata",
+    "pytest",
+    "serial",
+    "loguru",
+    "disspcap",
+    "pyrealsense2",
+    "netifaces",
 ]
 ignore_missing_imports = true

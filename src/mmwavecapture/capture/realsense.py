@@ -111,7 +111,7 @@ class Realsense(CaptureHardware):
         self._config = rs.config()
 
         # Output video file
-        self._colorwriter: Optional[cv2.ViedoWriter] = None
+        self._colorwriter: Optional[cv2.VideoWriter] = None
 
         self.init_capture_hw()
 
@@ -135,7 +135,7 @@ class Realsense(CaptureHardware):
             self._fps,
             self._resolution if not self._rotate else self._resolution[::-1],
             1,
-        )
+        )  # type: ignore
 
         self._capture_thread = threading.Thread(target=self._capture)
 
