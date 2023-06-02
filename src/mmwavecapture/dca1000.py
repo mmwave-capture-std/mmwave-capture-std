@@ -38,6 +38,7 @@ import json
 import pathlib
 import socket
 import struct
+import functools
 
 from copy import deepcopy
 from typing import Any, Literal, Optional, Union, overload
@@ -162,6 +163,19 @@ class DCA1000Config:
 
 
 class DCA1000:
+    @staticmethod
+    def log_command(func):
+        name = func.__name__
+
+        @functools.wraps(func)
+        def wrapped(self, *args, **kwargs):
+            logger.trace(f"To DCA {self.config.dca_ip} - sending command: `{name}`")
+            res = func(self, *args, **kwargs)
+            logger.trace(f"From DCA {self.config.dca_ip} - `{name}` result: {res}")
+            return res
+
+        return wrapped
+
     def __init__(self) -> None:
         self.config = DCA1000Config()
         self.socks = {}
@@ -251,18 +265,21 @@ class DCA1000:
         # Check if the command was successful
         return resp_dec[2] == 0
 
+    @log_command
     def reset_fpga(self) -> bool:
         """Reset DCA1000EVM FPGA
         Ref: 2.3.3 Reset FPGA, p.40, DCA1000EVM CLI Software Developer Guide, v1.01
         """
         return self._send_dca_command(DCA1000Command.RESET_FPGA)
 
+    @log_command
     def reset_radar(self) -> bool:
         """Reset Radar
         Ref: 2.3.4 Reset Radar, p.42, DCA1000EVM CLI Software Developer Guide, v1.01
         """
         return self._send_dca_command(DCA1000Command.RESET_AR_DEV_CMD)
 
+    @log_command
     def start_record(self) -> bool:
         """Start DCA1000EVM recording
         Ref: 2.3.5 Start Recording, p.45, DCA1000EVM CLI Software Developer Guide, v1.01
@@ -270,12 +287,14 @@ class DCA1000:
 
         return self._send_dca_command(DCA1000Command.RECORD_START)
 
+    @log_command
     def stop_record(self) -> bool:
         """Stop DCA1000EVM recording
         Ref: 2.3.6 Stop Recording, p.48, DCA1000EVM CLI Software Developer Guide, v1.01
         """
         return self._send_dca_command(DCA1000Command.RECORD_STOP)
 
+    @log_command
     def config_packet_delay(self) -> bool:
         """Set the delay between the config packet and the data packet
 
@@ -298,6 +317,7 @@ class DCA1000:
         )
         return self._send_dca_command(DCA1000Command.CONFIG_PACKET_DELAY, data)
 
+    @log_command
     def config_fpga(self) -> bool:
         """Configure DCA1000EVM FPGA
 
@@ -316,6 +336,7 @@ class DCA1000:
         )
         return self._send_dca_command(DCA1000Command.CONFIG_FPGA_GEN, data)
 
+    @log_command
     def config_eeprom(self) -> bool:
         """Configure DCA1000EVM EEPROM
 
@@ -353,6 +374,7 @@ class DCA1000:
         )
         return self._send_dca_command(DCA1000Command.CONFIG_EEPROM, data)
 
+    @log_command
     def system_connection(self) -> bool:
         """Check if the DCA1000EVM is connected to the host computer
 
@@ -360,6 +382,7 @@ class DCA1000:
         """
         return self._send_dca_command(DCA1000Command.SYSTEM_CONNECTION)
 
+    @log_command
     def system_error_status(self) -> int:
         """Check DCA1000EVM system error status
 
@@ -378,6 +401,7 @@ class DCA1000:
             DCA1000Command.SYSTEM_ERROR_STATUS, return_raw_status=True
         )
 
+    @log_command
     def read_fpga_version(self) -> tuple[int, int, bool]:
         """Return FPGA version
 
