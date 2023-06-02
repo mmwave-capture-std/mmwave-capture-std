@@ -75,13 +75,13 @@ class Radar:
         self._data_port = data_port
         self._data_baudrate = data_baudrate
         self._timeout = timeout
-        self._capture_frames = capture_frames
         self._config_filename = config_filename
         self._config = [
             n.strip()
             for n in open(self._config_filename).readlines()
             if not n.startswith("%")
         ]  # skip comments in config file
+        self.capture_frames = capture_frames
 
         self._config_serial = serial.Serial()
         self._data_serial = serial.Serial()
@@ -94,8 +94,22 @@ class Radar:
         return self._capture_frames
 
     @capture_frames.setter
+    @logger.catch(reraise=True)
     def capture_frames(self, capture_frames: int) -> None:
         self._capture_frames = capture_frames
+
+        # We need to replace frameCfg `number of frames` with `self._capture_frames`
+        # Ref: `frameCfg/number of frames`, p.24, MMWAVE SDK User Guide
+        for i, command in enumerate(self._config):
+            if command.startswith("frameCfg"):
+                frame_cfg = command.split(" ")
+                frame_cfg[4] = f"{self._capture_frames:d}"
+                command = " ".join(frame_cfg)
+                self._config[i] = command
+                return
+        raise RuntimeError(
+            f"{self._config_port} - missing `frameCfg` in config file: {self._config_filename}"
+        )
 
     def _send_command(self, command: str) -> None:
         # Put command "" to `logger.debug`
@@ -195,6 +209,10 @@ class Radar:
             raise Exception(f"{self._config_port} - Radar not initialized")
 
         self._send_command_and_check_output("sensorStop")
+
+    def dump_config(self, outfile: pathlib.Path) -> None:
+        with open(outfile, "w") as f:
+            f.write("\n".join(self._config))
 
     def __del__(self):
         self.close_serials()

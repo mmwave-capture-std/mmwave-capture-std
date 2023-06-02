@@ -34,6 +34,8 @@
 from __future__ import annotations
 
 import enum
+import json
+import pathlib
 import socket
 import struct
 
@@ -160,7 +162,7 @@ class DCA1000Config:
 
 
 class DCA1000:
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = DCA1000Config()
         self.socks = {}
 
@@ -394,3 +396,7 @@ class DCA1000:
 
     def read(self):
         return self.socks["data"].recv(DCA1000Const.MAX_BYTES_PER_PACKET)
+
+    def dump_config(self, outfile: pathlib.Path):
+        with open(outfile, "w") as f:
+            json.dump(self.config._config, f, indent=4, ensure_ascii=False)

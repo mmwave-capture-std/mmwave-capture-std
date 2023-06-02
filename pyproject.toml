@@ -15,6 +15,10 @@ disspcap = {git = "git@github.com:mlouielu/disspcap.git", rev = "dev"}
 pyserial = "^3.5"
 loguru = "^0.7.0"
 pre-commit = "^3.3.2"
+netifaces = "0.11.0"
+toml = "^0.10.2"
+pyrealsense2 = "^2.53.1.4623"
+opencv-python = "^4.7.0.72"
 
 [build-system]
 requires = ["poetry-core"]
