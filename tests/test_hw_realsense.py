@@ -43,9 +43,8 @@ def realsense():
     return Realsense("realsense")
 
 
-def test_hw_realsense(realsense):
-    realsense.base_path = pathlib.Path("datasets")
-    realsense.init_capture_hw()
+def test_hw_realsense(realsense, tmp_path):
+    realsense.base_path = tmp_path
     realsense.prepare_capture()
     realsense.start_capture()
     realsense.stop_capture()

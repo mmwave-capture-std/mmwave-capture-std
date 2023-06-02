@@ -72,11 +72,11 @@ def radar(radar_config):
     )
 
 
-def test_radar_setter(rada_uninit):
+def test_radar_setter(radar_uninit):
     new_capture_frames = 20
-    assert rada_uninit.capture_frames == 10
-    rada_uninit.capture_frames = new_capture_frames
-    assert rada_uninit.capture_frames == new_capture_frames
+    assert radar_uninit.capture_frames == 10
+    radar_uninit.capture_frames = new_capture_frames
+    assert radar_uninit.capture_frames == new_capture_frames
 
 
 def test_radar_uninit(radar_uninit):
