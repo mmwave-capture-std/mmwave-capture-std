@@ -69,15 +69,21 @@ capture_frames = 10
 Where to start?
 ---------------
 
-First, setup your environment (hardware, software, and network): Setup.
+First, setup your environment (hardware, software, and network):
+[Setup](https://mmwave-capture-std.readthedocs.io/en/latest/setup.html).
 
-Then, read our quickstart to get familiar with how mmwave-capture-std works: Quickstart.
+Then, read our quickstart to get familiar with how mmwave-capture-std works:
+[Quickstart](https://mmwave-capture-std.readthedocs.io/en/latest/quickstart.html).
+
+See the full documentation:
+[mmwave-capture-std Documentation](https://mmwave-capture-std.readthedocs.io/en/latest/index.html)
+for more information.
 
 Links
 -----
 
 * Homepage: <https://www.cs.unc.edu/~louielu/p/mmwave-capture-std/>
-* Documentation:
+* Documentation: [mmwave-capture-std Documentation](https://mmwave-capture-std.readthedocs.io/en/latest/)
 * Source Code: [mmwave-capture-std/mmwave-capture-std](https://github.com/mmwave-capture-std/mmwave-capture-std/)
 * License: [BSD 3-Clause Clear License](https://github.com/mmwave-capture-std/mmwave-capture-std/blob/main/LICENSE)
 
