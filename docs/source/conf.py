@@ -5,22 +5,29 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+import sys
 
-project = "Millimeter-wave Capture Standard (mmwave-capture-std)"
-copyright = "2023, Louie Lu <louielu@cs.unc.edu>"
-author = "Louie Lu <louielu@cs.unc.edu>"
+sys.path.insert(0, os.path.abspath(os.path.join("..", "..", "src")))
+
+project = "mmwave-capture-std"
+copyright = "2023, Louie Lu"
+author = "Louie Lu"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []  # type: ignore
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = []  # type: ignore
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "alabaster"
+html_theme = "furo"
 html_static_path = ["_static"]
