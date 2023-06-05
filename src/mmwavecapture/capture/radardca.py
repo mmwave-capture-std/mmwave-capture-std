@@ -158,7 +158,7 @@ class RadarDCA(CaptureHardware):
     def prepare_capture(self) -> None:
         if not self._init_capture_hw:
             raise RuntimeError(
-                "Capture hardwares are not initialized, run `.init_capture_hw()` first"
+                "Capture hardware are not initialized, run `.init_capture_hw()` first"
             )
 
         if not self.base_path:

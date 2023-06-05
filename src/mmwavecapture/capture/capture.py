@@ -171,11 +171,11 @@ class Capture:
 
     @logger.catch(reraise=True)
     def capture(self) -> None:
-        logger.info("Preparing capture hardwares")
+        logger.info("Preparing capture hardware")
         for hw in self._cap_hw:
             hw.prepare_capture()
 
-        logger.info("Starting capture hardwares")
+        logger.info("Starting capture hardware")
         for hw in self._cap_hw:
             hw.start_capture()
         logger.success("Capture started")
@@ -296,7 +296,7 @@ class CaptureManager:
             logger.success(f"Capture hardware `{hw}` initialized")
 
         logger.success(
-            f"Total of {len(self._config['hardware'])} capture hardwares initialized"
+            f"Total of {len(self._config['hardware'])} capture hardware initialized"
         )
 
     def capture(self) -> None:
