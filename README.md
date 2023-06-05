@@ -23,6 +23,9 @@ It stands out with three key attributes:
    by using a toml config file to manage capture hardware, layout the dataset
    as HDF5-like structure, and provide sensor config files to each capture result.
 
+Capture Millimeter-wave Raw Data is Easy
+----------------------------------------
+
 Here is an example of using `mmwave-capture-std` to capture mmwave data
 from IWR1483BOOST and DCA1000EVM:
 
