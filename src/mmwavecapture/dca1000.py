@@ -163,6 +163,22 @@ class DCA1000Config:
 
 
 class DCA1000:
+    """This class is used to communicate with the DCA1000EVM over ethernet.
+
+    The DCA1000EVM is a data capture card that is used to capture data from the
+    Texas Instruments millimeter-wave radar sensor. The DCA1000EVM is connected
+    to the host computer via ethernet, and the host computer can send commands
+    to the DCA1000EVM to control its behavior.
+
+    This class does not capture data from the DCA1000EVM. Instead, it is used to
+    send commands to the DCA1000EVM to control its behavior.
+
+    .. note::
+        Currently it does not read config from files. User should eithe config it
+        by `CaptureManager` config file or by `DCA1000Config` class.
+
+    """
+
     @staticmethod
     def log_command(func):
         name = func.__name__
@@ -268,6 +284,7 @@ class DCA1000:
     @log_command
     def reset_fpga(self) -> bool:
         """Reset DCA1000EVM FPGA
+
         Ref: 2.3.3 Reset FPGA, p.40, DCA1000EVM CLI Software Developer Guide, v1.01
         """
         return self._send_dca_command(DCA1000Command.RESET_FPGA)
@@ -275,6 +292,7 @@ class DCA1000:
     @log_command
     def reset_radar(self) -> bool:
         """Reset Radar
+
         Ref: 2.3.4 Reset Radar, p.42, DCA1000EVM CLI Software Developer Guide, v1.01
         """
         return self._send_dca_command(DCA1000Command.RESET_AR_DEV_CMD)
@@ -282,6 +300,7 @@ class DCA1000:
     @log_command
     def start_record(self) -> bool:
         """Start DCA1000EVM recording
+
         Ref: 2.3.5 Start Recording, p.45, DCA1000EVM CLI Software Developer Guide, v1.01
         """
 
@@ -290,6 +309,7 @@ class DCA1000:
     @log_command
     def stop_record(self) -> bool:
         """Stop DCA1000EVM recording
+
         Ref: 2.3.6 Stop Recording, p.48, DCA1000EVM CLI Software Developer Guide, v1.01
         """
         return self._send_dca_command(DCA1000Command.RECORD_STOP)
@@ -419,8 +439,14 @@ class DCA1000:
         return major, minor, mode
 
     def read(self):
+        """Read DCA1000EVM data from host ip data port
+
+        .. note::
+            It is not recommended to use this method.
+        """
         return self.socks["data"].recv(DCA1000Const.MAX_BYTES_PER_PACKET)
 
     def dump_config(self, outfile: pathlib.Path):
+        """Dump the current configuration to a JSON file"""
         with open(outfile, "w") as f:
             json.dump(self.config._config, f, indent=4, ensure_ascii=False)

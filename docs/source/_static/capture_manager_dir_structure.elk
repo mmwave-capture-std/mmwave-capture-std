@@ -1,0 +1,141 @@
+interactiveLayout: true
+elk.direction: DOWN
+nodePlacement.strategy: NETWORK_SIMPLEX
+algorithm: layered
+layered.considerModelOrder.strategy: NODES_AND_EDGES
+spacing.edgeNodeBetweenLayers: 20
+
+node dataset {
+    layout [ size: 250, 50 ]
+
+    label "Dataset Root Directory" {
+        layout [ size: 150, 0 ]
+        nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+    }
+}
+node capture_1 {
+  nodeLabels.placement: "H_LEFT V_TOP OUTSIDE"
+  label "Capture 1"
+
+  node config {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+      label "config.toml"
+  }
+  node log {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+      label "capture.log"
+  }
+}
+
+node s1 {
+    nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+    label "Sensor 1"
+    node config {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "sensor cfg"
+    }
+    node config2 {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "sensor cfg"
+    }
+    node data {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "capture data"
+    }
+}
+
+node s3 {
+    label "Sensor N" {
+        nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+    }
+    label "..." {
+        nodeLabels.placement: "H_LEFT V_CENTER OUTSIDE"
+    }
+    node config {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "sensor cfg"
+    }
+    node data {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "capture data"
+    }
+}
+
+node capture_2 {
+  nodeLabels.placement: "H_LEFT V_TOP OUTSIDE"
+  label "Capture 2"
+
+  node config {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+      label "config.toml"
+  }
+  node log {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+      label "capture.log"
+  }
+}
+
+node cap2_s1 {
+    nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+    label "Sensor 1"
+    node config {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "sensor cfg"
+    }
+    node config2 {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "sensor cfg"
+    }
+    node data {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_TOP H_CENTER"
+      label "capture data"
+    }
+}
+
+node capture_n {
+  label "Capture N" {
+        nodeLabels.placement: "H_LEFT V_TOP OUTSIDE"
+  }
+
+  label "..." {
+        nodeLabels.placement: "H_LEFT V_CENTER OUTSIDE"
+  }
+  node config {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+      label "config.toml"
+  }
+  node log {
+      layout [ size: 120, 30 ]
+      nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+      label "capture.log"
+  }
+}
+
+node invis {
+    nodeLabels.placement: "INSIDE V_CENTER H_CENTER"
+    label "..."
+}
+
+edge dataset -> capture_1
+edge dataset -> capture_2
+edge dataset -> capture_n
+
+edge capture_1 -> s1
+edge capture_1 -> s3
+
+edge capture_2 -> cap2_s1
+
+edge capture_n -> invis

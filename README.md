@@ -5,62 +5,42 @@ Millimeter-wave Capture Standard (mmwave-capture-std)
 [![License: BSD 3-Clause-Clear](https://img.shields.io/badge/License-BSD%203--Clause--Clear-green.svg)](https://spdx.org/licenses/BSD-3-Clause-Clear.html)
 
 **mmwave-capture-std** is a *fast*, *reliable*, and *replicable*
-Texas Instruments millimeter-wave capture toolkit.
+Texas Instruments millimeter-wave capture toolkit,
+focus on data capturing and raw data parsing.
 
-`mmwave-capture-std` focus on data capturing and parsing raw data,
-it stands out with three key attributes:
+It stands out with three key attributes:
 
-1. Fast: It parse raw data into `np.ndarray[np.complex64]` **7.25** times
+1. Fast: It parses raw data into `np.ndarray[np.complex64]` **7.25** times
    faster than state-of-the-art packages (0.75s v.s. 5.435s).
 
-2. Reliable: It makes user easily indentify and debugging hardware issues, and provides
-   fine-grained control over hardwares. It achieves this by comprehensive logging
-   (stderr & file) and by separating the hardware setup from data capture code.
+2. Reliable: It makes users easily identify and debug hardware issues,
+   and provides fine-grained control over different hardware.
+   It achieves this by comprehensive logging (stderr & file) and by separating
+   the hardware setup from the data capture code.
 
-3. Replicable: It simplifies the process of replicating recording setup by
-   using a toml config file to manage capture hardwares, layout the dataset
+3. Replicable: It simplifies the process of replicating the recording setup
+   by using a toml config file to manage capture hardware, layout the dataset
    as HDF5-like structure, and provide sensor config files to each capture result.
 
-Prerequisites
--------------
-
-* tcpdump (Please take a look at [How to setup tcpdump capture privileges](#how-to-setup-tcpdump-capture-privileges))
-* Poetry
-
-Install
--------
-
-```bash
-git clone git@github.com:mmwave-capture-std/mmwave-capture-std.git
-cd mmwave-capture-std
-poetry install
-```
-
-How to capture
---------------
-
-Capture should be *easy*, *reliable*, and *replicable*.
-
-You can run the following command in `mmwave-capture-std/` to caputre
-mmwave raw IF signals from IWR1843 + DCA1000EVM:
+Here is an example of using `mmwave-capture-std` to capture mmwave data
+from IWR1483BOOST and DCA1000EVM:
 
 ```bash
 $ poetry run mmwavecapture-std examples/capture_iwr1843.toml
 2023-06-02 :43.91 | INFO     | ...:...:225 - Capture ID: 0
 2023-06-02 :43.91 | INFO     | ...:init_hw:230 - Initializing capture hardware `iwr1843`..
 2023-06-02 :49.32 | SUCCESS  | ...:init_hw:245 - Capture hardware `iwr1843` initialized
-2023-06-02 :49.32 | SUCCESS  | ...:init_hw:247 - Total of 1 capture hardwares initialized
+2023-06-02 :49.32 | SUCCESS  | ...:init_hw:247 - Total of 1 capture hardware initialized
 2023-06-02 :49.32 | INFO     | ...:capture:258 - Adding capture hardware `iwr1843`
-2023-06-02 :49.32 | INFO     | ...:capture:121 - Preparing capture hardwares
-2023-06-02 :49.32 | INFO     | ...:capture:125 - Starting capture hardwares
+2023-06-02 :49.32 | INFO     | ...:capture:121 - Preparing capture hardware
+2023-06-02 :49.32 | INFO     | ...:capture:125 - Starting capture hardware
 2023-06-02 :49.42 | SUCCESS  | ...:capture:128 - Capture started
 2023-06-02 :52.49 | INFO     | ...:capture:132 - Capture finished
 2023-06-02 :52.49 | INFO     | ...:capture:134 - Dumping capture hardware configurations
 2023-06-02 :52.49 | SUCCESS  | ...:capture:270 - Capture finished, all files ...
 ```
 
-The capture result will be stored in `example_dataset/`,
-the layout should looks like:
+Nice and easy! Your capture result will be stored like this with HDF5-like structure:
 
 ```bash
 ☁  mmwave-capture-std [main]  tree example_dataset
@@ -86,38 +66,20 @@ radar_data_port = "/dev/ttyACM1"
 capture_frames = 10
 ```
 
-How to setup tcpdump capture privileges
----------------------------------------
+Where to start?
+---------------
 
-For detail information about how to setup tcpdump capture privileges,
-please refer to [Wireshark: CaptureSetup/CapturePrivileges](https://wiki.wireshark.org/CaptureSetup/CapturePrivileges).
+First, setup your environment (hardware, software, and network): Setup.
 
-Below is the example of setting up on Linux:
+Then, read our quickstart to get familiar with how mmwave-capture-std works: Quickstart.
 
-### 1. Limit capture permission to only one group
+Links
+-----
 
-1. Create a group called `pcap` and add yourself to it:
-
-    ```bash
-    sudo groupadd pcap
-    sudo usermod -a -G pcap $USER
-    ```
-
-1. Re-login to apply the group changes or use `newgrp pcap` as
-   the normal user to enter the *pcap* group. (Run the `groups`
-   command to verify that you are part of the *pcap* group.
-1. Change `/usr/sbin/tcpdump` group and file mode
-
-    ```bash
-    sudo chgrp pcap /usr/sbin/tcpdump
-    sudo chmod o-rx /usr/sbin/tcpdump
-    ```
-
-### 2. Setting network privileges for tcpdump by file capabilities
-
-```bash
-sudo setcap cap_net_raw,cap_net_admin+eip /usr/sbin/tcpdump
-```
+* Homepage: <https://www.cs.unc.edu/~louielu/p/mmwave-capture-std/>
+* Documentation:
+* Source Code: [mmwave-capture-std/mmwave-capture-std](https://github.com/mmwave-capture-std/mmwave-capture-std/)
+* License: [BSD 3-Clause Clear License](https://github.com/mmwave-capture-std/mmwave-capture-std/blob/main/LICENSE)
 
 Contribute
 ----------
