@@ -102,7 +102,7 @@ This project is licensed under the `BSD 3-Clause Clear License <https://github.c
    :caption: Development
    :hidden:
 
-   api
+   api/api
 
 .. toctree::
    :caption: Links
