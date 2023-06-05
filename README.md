@@ -10,8 +10,8 @@ focus on data capturing and raw data parsing.
 
 It stands out with three key attributes:
 
-1. Fast: It parses raw data into `np.ndarray[np.complex64]` **7.25** times
-   faster than state-of-the-art packages (0.75s v.s. 5.435s).
+1. Fast: It parses raw data into `np.ndarray[np.complex64]` **2.09** times
+   faster than state-of-the-art packages (0.59s v.s. 1.239s).
 
 2. Reliable: It makes users easily identify and debug hardware issues,
    and provides fine-grained control over different hardware.

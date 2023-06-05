@@ -12,7 +12,7 @@ Welcome to Millimeter-wave Capture Standard (mmwave-capture-std)'s documentation
 
 It stands out with three key attributes:
 
-#. **Fast**: It parses raw data into ``np.ndarray[np.complex64]`` 7.25 times faster than state-of-the-art packages (0.75s v.s. 5.435s).
+#. **Fast**: It parses raw data into ``np.ndarray[np.complex64]`` 2.09 times faster than state-of-the-art packages (0.593s v.s. 1.239s).
 
 #. **Reliable**: It makes users easily identify and debug hardware issues, and provides fine-grained control over different hardware. It achieves this by comprehensive logging (stderr & file) and by separating the hardware setup from the data capture code.
 
