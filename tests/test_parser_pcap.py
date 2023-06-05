@@ -35,8 +35,9 @@ import pathlib
 
 import pytest
 
-import mmwavecapture.parser.pcap
-from mmwavecapture.parser.pcap import parser, cparser
+
+from mmwavecapture.parser.pcap import PcapCparser
+from mmwavecapture.parser.pcap import parser
 
 
 @pytest.fixture
@@ -91,7 +92,7 @@ def test_get_raw_bytes_from_pcap(one_frame_pcap_filename):
 
 def test_cparser_get_complex(one_frame_pcap_filename):
     data_ports = [4098]
-    pcap = cparser.PcapCparser(
+    pcap = PcapCparser(
         one_frame_pcap_filename,
         data_ports=data_ports,
         lsb_quadrature=True,
@@ -117,7 +118,7 @@ def test_cparser_get_complex(one_frame_pcap_filename):
 @pytest.mark.manual
 def test_cparser_large_file_get_complex(large_pcap):
     data_ports = [4098]
-    pcap = cparser.PcapCparser(
+    pcap = PcapCparser(
         large_pcap,
         data_ports=data_ports,
         lsb_quadrature=True,
