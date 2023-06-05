@@ -14,7 +14,7 @@ mmwavecapture-std = "mmwavecapture.cli:cli"
 python = "^3.8"
 pytest = "^7.3.1"
 numpy = "^1.24.3"
-disspcap = {git = "git@github.com:mlouielu/disspcap.git", rev = "dev"}
+disspcap = {git = "https://github.com/mlouielu/disspcap.git", rev = "dev"}
 pyserial = "^3.5"
 loguru = "^0.7.0"
 pre-commit = "^3.3.2"
