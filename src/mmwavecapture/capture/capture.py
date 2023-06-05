@@ -44,6 +44,48 @@ from loguru import logger
 
 
 class CaptureHardware(abc.ABC):
+    """CaptureHardware is the abstract class for all capture hardware.
+
+
+    For each capture hardware, there are 5 stages of capture process:
+
+    1. Initialize capture hardware
+
+        This stage should initialize and config the capture hardware,
+        and make sure the capture hardware is ready to capture data.
+
+        .. note:: Do not create any output files in this stage.
+
+    2. Prepare capture environment and output files
+
+        This stage should setup the capture environment and create
+        output files for the capture hardware. You should also setup
+        thread/processes for capturing data at this stage, but not start them.
+
+        .. warning:: The output files should be created under `base_path`
+
+        If you are using `Capture` class, the hardware `base_path` will
+        be setup after calling `Capture.add_capture_hardware()`.
+        If you are using `CaptureManager` class, the hardware `base_path`
+        will be setup during `CaptureManager.capture()`.
+        It not using any of the above classes, you should setup the
+        `base_path` by yourself before calling `CaptureHardware.prepare_capture()`.
+
+    3. Start capture
+
+        This stage should start the capture process/thread.
+
+    4. Stop capture
+
+        This stage should stop the capture process/thread and close
+        the output files.
+
+    5. Dump configuration
+
+        This stage should dump the configuration of the capture hardware
+        to `base_path/<config_name>` for future reference.
+    """
+
     _hw_name: str = ""
     _base_path: Optional[pathlib.Path] = None
 
@@ -57,6 +99,17 @@ class CaptureHardware(abc.ABC):
 
     @property
     def base_path(self) -> Optional[pathlib.Path]:
+        """The base path for the capture hardware
+
+        The base path will be set by `Capture` class or `CaptureManager` class.
+        Or by yourself if you are not using any of the above classes.
+
+        If set it by `CaptureManager`, the base path should be
+        `<dataset_path>/<capture_path>/<hw_name>/`.
+
+        :setter: Set the base path for the capture hardware
+        :getter: Get the base path for the capture hardware
+        """
         return self._base_path
 
     @base_path.setter
@@ -77,7 +130,7 @@ class CaptureHardware(abc.ABC):
     def prepare_capture(self) -> None:
         """Prepare the capture environment and output files
 
-        Output filename should be `self.base_path`/`hw_name`.*
+        Output filename should be `self.base_path`/<sensor>.*
         """
         raise NotImplementedError
 
@@ -140,24 +193,22 @@ class CaptureManager:
     """Capture Manager manages HDF5-like dataset directory structure
     and handle capture hardware initialization and capture process.
 
-    The layout of dataset directory is as follows:
+    The layout of dataset directory is as follows::
 
-    ```
-    dataset_path/           # Create when initalizing `CaptureManager`
-    ├── capture_00000/      # Create when calling `CaptureManager.capture()`
-    │   ├── config.toml     # Capture configuration
-    │   ├── iwr1843_vert/   # Capture hardware name
-    │   │   ├── dca.pcap    # DCA1000EVM capture pcap
-    │   │   ├── radar.cfg   # Radar configuration
-    │   │   ├── dca.json    # DCA1000EVM configuration
-    │   ├── realsense/         # Another capture hardware name
-    │   │   ├── color.avi      # Color video
-    ├── capture_00001/
-    │   ├── config.toml
-    │   ├── iwr1843_vert/
-    │   │   ├── dca.pcap
-    ...
-    ```
+        dataset_path/           # Create when initalizing `CaptureManager`
+        ├── capture_00000/      # Create when calling `CaptureManager.capture()`
+        │   ├── config.toml     # Capture configuration
+        │   ├── iwr1843_vert/   # Capture hardware name
+        │   │   ├── dca.pcap    # DCA1000EVM capture pcap
+        │   │   ├── radar.cfg   # Radar configuration
+        │   │   ├── dca.json    # DCA1000EVM configuration
+        │   ├── realsense/         # Another capture hardware name
+        │   │   ├── color.avi      # Color video
+        ├── capture_00001/
+        │   ├── config.toml
+        │   ├── iwr1843_vert/
+        │   │   ├── dca.pcap
+        ...
 
     The calling sequence of `CaptureManager` is as follows:
 

@@ -58,6 +58,35 @@ class RadarStatus(enum.IntEnum):
 
 
 class Radar:
+    """This is a Texas Instrumenst xWR16xx/18xx mmwave radar interface.
+
+    The main goal of this class is to provide a simple interface to communicate
+    and config the radar to run the sensor for specified number of frames. It does
+    not capture TLV data from the radar.
+
+    It force user to provide a radar config file during the
+    construction of the class.
+
+    :param config_port: The serial port to radar config UART
+    :type config_port: str
+    :param config_baudrate: The baudrate of the radar config UART
+    :type config_baudrate: int
+    :param data_port: The serial port to radar data UART
+    :type data_port: str
+    :param data_baudrate: The baudrate of the radar data UART
+    :type data_baudrate: int
+    :param config_filename: The radar config filename, the format should be
+        compatible with the mmwave SDK
+    :type config_filename: pathlib.Path
+    :param timeout: The timeout for serial communication, defaults to 3 seconds
+    :type timeout: int, optional
+    :param initialize_connection_and_radar: If set to True, the radar will be initialized
+        and connected during the construction of the class, defaults to False
+    :type initialize_connection_and_radar: bool, optional
+    :param capture_frames: The number of frames to capture, defaults to 100 frames
+    :type capture_frames: int, optional
+    """
+
     def __init__(
         self,
         config_port: str,
@@ -69,6 +98,7 @@ class Radar:
         initialize_connection_and_radar: bool = False,
         capture_frames: int = 100,
     ):
+        """Constructor method"""
         self._initialized = False
         self._config_port = config_port
         self._config_baudrate = config_baudrate
@@ -91,6 +121,13 @@ class Radar:
 
     @property
     def capture_frames(self) -> int:
+        """The number of frames to capture
+
+        :getter: Return the number of frames to capture
+        :setter: Set the number of frames to capture,
+            it will update the `farmeCfg` command in loaded config
+        :type: int
+        """
         return self._capture_frames
 
     @capture_frames.setter
@@ -112,16 +149,37 @@ class Radar:
         )
 
     def _send_command(self, command: str) -> None:
+        """Send command to radar config UART. It will encode str to bytes
+        and append a newline character to the end of the command.
+
+        :param command: The command to send to radar config UART
+        :type: str
+        """
         logger.trace(f"{self._config_port} - command: {command}")
 
         self._config_serial.write(f"{command}\n".encode("utf-8"))
 
     def _send_command_safe(self, command: str) -> None:
+        """Safe way to send command to radar config UART.
+        Add additional 0.1 seconds sleep after sending command.
+
+        :param command: The command to send to radar config UART
+        :type: str
+        """
         self._send_command(command)
         time.sleep(0.01)  # XXX: Serious? It could be affect by the baudrate
 
     @logger.catch(reraise=True)
     def _send_command_and_check_output(self, command: str) -> str:
+        """Send command to radar config UART and check the output.
+
+        By forcing a `mmwDemo:/>` response, we can make sure the command
+        is finished. Then we can check if `Done` is in the response
+        to see if the command is executed successfully.
+
+        :param command: The command to send to radar config UART
+        :type: str
+        """
         self._send_command_safe(command)
         self._send_command("")  # Force a `mmwDemo:/>\n` response
 
@@ -145,22 +203,30 @@ class Radar:
         return response
 
     def _flush_radar_config_serial_buffer(self) -> None:
+        """Flush the radar config serial buffer"""
         self._send_command("")
 
         flushed = self._config_serial.read_until(b"mmwDemo:/>\n")
         logger.trace(f"{self._config_port} - flush: {flushed}")
 
     def get_radar_status(self):
+        """Get radar status (MMWAVE SDK OOB Demo)
+
+        :return: Radar status and data baudrate
+        :rtype: Tuple[RadarStatus, int]1
+        """
         resp = self._send_command_and_check_output("queryDemoStatus")
         state, data_baudrate = re.search(RADAR_STATUS_QUERY_REGEX, resp).groups()
         return RadarStatus(int(state)), int(data_baudrate)
 
     def initialize(self) -> None:
+        """Connect to radar and flush the radar config serial buffer"""
         self.connect_serials()
         self._flush_radar_config_serial_buffer()
         self._initialized = True
 
     def connect_serials(self) -> None:
+        """Connect serial ports, setup baudrate and timeout"""
         self._config_serial.port = self._config_port
         self._config_serial.baudrate = self._config_baudrate
         self._config_serial.timeout = self._timeout
@@ -172,11 +238,13 @@ class Radar:
         self._data_serial.open()
 
     def close_serials(self) -> None:
+        """Close serial ports"""
         self._config_serial.close()
         self._data_serial.close()
 
     @logger.catch(reraise=True)
     def config(self) -> None:
+        """Send config commands to radar"""
         if not self._initialized:
             raise Exception(f"{self._config_port} - Radar not initialized")
 
@@ -196,6 +264,7 @@ class Radar:
 
     @logger.catch(reraise=True)
     def start_sensor(self) -> None:
+        """Send `sensorStart` command to radar"""
         if not self._initialized:
             raise Exception(f"{self._config_port} - Radar not initialized")
 
@@ -203,12 +272,14 @@ class Radar:
 
     @logger.catch(reraise=True)
     def stop_sensor(self) -> None:
+        """Send `sensorStop` command to radar"""
         if not self._initialized:
             raise Exception(f"{self._config_port} - Radar not initialized")
 
         self._send_command_and_check_output("sensorStop")
 
     def dump_config(self, outfile: pathlib.Path) -> None:
+        """Dump current radar config to file"""
         with open(outfile, "w") as f:
             f.write("\n".join(self._config))
 
