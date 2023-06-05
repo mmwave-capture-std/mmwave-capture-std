@@ -8,7 +8,7 @@ Subpackages
    :maxdepth: 4
 
    mmwavecapture.capture
-   mmwavecapture.pcap
+   mmwavecapture.parser
 
 Submodules
 ----------
@@ -34,7 +34,6 @@ mmwavecapture.radar module
 
 .. automodule:: mmwavecapture.radar
    :members:
-   :private-members:
    :undoc-members:
    :show-inheritance:
 

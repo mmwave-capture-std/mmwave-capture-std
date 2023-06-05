@@ -35,8 +35,9 @@ import pathlib
 
 import pytest
 
-import mmwavecapture.pcap
-from mmwavecapture.pcap import parser, cparser
+import mmwavecapture.parser.pcap
+from mmwavecapture.parser.pcap import PcapCparser
+from mmwavecapture.parser.pcap import parser
 
 
 @pytest.fixture
@@ -63,7 +64,7 @@ def test_cmd_dissec(cmd_pcap_filename):
     for p in parser._PcapIterWrapper(cmd_pcap_filename):
         assert p.udp.destination_port == 4096
 
-        config = mmwavecapture.pcap.layer7.Config(p)
+        config = mmwavecapture.parser.pcap.layer7.Config(p)
         assert config.header == 0xA55A
         assert config.footer == 0xEEAA
         assert config.cmd >= 0
@@ -75,7 +76,7 @@ def test_raw_dissec(one_frame_pcap_filename):
     next_expected_seq_id = 1
     for p in parser._PcapIterWrapper(one_frame_pcap_filename):
         if p.udp.destination_port == 4098:
-            raw = mmwavecapture.pcap.layer7.Raw(p)
+            raw = mmwavecapture.parser.pcap.layer7.Raw(p)
             assert raw.seq_id == next_expected_seq_id
             assert raw.byte_count == current_total_bytes
             assert len(raw.data)
@@ -91,7 +92,7 @@ def test_get_raw_bytes_from_pcap(one_frame_pcap_filename):
 
 def test_cparser_get_complex(one_frame_pcap_filename):
     data_ports = [4098]
-    pcap = cparser.PcapCparser(
+    pcap = PcapCparser(
         one_frame_pcap_filename,
         data_ports=data_ports,
         lsb_quadrature=True,
@@ -117,7 +118,7 @@ def test_cparser_get_complex(one_frame_pcap_filename):
 @pytest.mark.manual
 def test_cparser_large_file_get_complex(large_pcap):
     data_ports = [4098]
-    pcap = cparser.PcapCparser(
+    pcap = PcapCparser(
         large_pcap,
         data_ports=data_ports,
         lsb_quadrature=True,

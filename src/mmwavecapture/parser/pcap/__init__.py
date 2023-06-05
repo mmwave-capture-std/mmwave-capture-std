@@ -31,48 +31,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-from __future__ import annotations
-
-import pathlib
-from typing import Dict
-
-import numpy as np
-
-import disspcap
-
-
-class PcapCparser:
-    """DCA1000EVM pcap c++ parser
-    Assumption for DCA1000EVM: LVDS 2 Channels
-    """
-
-    def __init__(
-        self,
-        pcap_file: pathlib.Path,
-        data_ports: list[int] = [4098],
-        lsb_quadrature: bool = True,
-        preprocessing: bool = True,
-    ):
-        self.pcap_file = pcap_file
-        self.pcap = disspcap.Pcap(str(pcap_file))
-        self.data_ports = data_ports
-        self.lsb_quadrature = lsb_quadrature
-        self.dca_data: Dict[int, disspcap.DcaData] = {}
-
-        if preprocessing:
-            self.preprocessing()
-
-    def preprocessing(self):
-        self.pcap.dca_fetch_packets(self.data_ports)
-        for port in self.data_ports:
-            dd = self.pcap.get_dca_data(port)
-            dd.convert_complex(True)
-            self.dca_data[port] = dd
-
-    def validate_dca_data(self, port: int):
-        dd = self.dca_data[port]
-        return not dd.is_out_of_order and dd.dca_report_tx_bytes == dd.received_rx_bytes
-
-    def get_complex(self, port: int):
-        dd = self.dca_data[port]
-        return np.array(dd, copy=False)
+from mmwavecapture.parser.pcap.cparser import PcapCparser
