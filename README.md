@@ -1,6 +1,7 @@
 Millimeter-wave Capture Standard (mmwave-capture-std)
 =====================================================
 
+[![Documentation Status](https://readthedocs.org/projects/mmwave-capture-std/badge/?version=latest)](https://mmwave-capture-std.readthedocs.io/en/latest/?badge=latest)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![License: BSD 3-Clause-Clear](https://img.shields.io/badge/License-BSD%203--Clause--Clear-green.svg)](https://spdx.org/licenses/BSD-3-Clause-Clear.html)
 
@@ -69,15 +70,21 @@ capture_frames = 10
 Where to start?
 ---------------
 
-First, setup your environment (hardware, software, and network): Setup.
+First, setup your environment (hardware, software, and network):
+[Setup](https://mmwave-capture-std.readthedocs.io/en/latest/setup.html).
 
-Then, read our quickstart to get familiar with how mmwave-capture-std works: Quickstart.
+Then, read our quickstart to get familiar with how mmwave-capture-std works:
+[Quickstart](https://mmwave-capture-std.readthedocs.io/en/latest/quickstart.html).
+
+See the full documentation:
+[mmwave-capture-std Documentation](https://mmwave-capture-std.readthedocs.io/en/latest/index.html)
+for more information.
 
 Links
 -----
 
 * Homepage: <https://www.cs.unc.edu/~louielu/p/mmwave-capture-std/>
-* Documentation:
+* Documentation: [mmwave-capture-std Documentation](https://mmwave-capture-std.readthedocs.io/en/latest/)
 * Source Code: [mmwave-capture-std/mmwave-capture-std](https://github.com/mmwave-capture-std/mmwave-capture-std/)
 * License: [BSD 3-Clause Clear License](https://github.com/mmwave-capture-std/mmwave-capture-std/blob/main/LICENSE)
 

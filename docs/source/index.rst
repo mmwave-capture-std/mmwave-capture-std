@@ -109,6 +109,7 @@ This project is licensed under the `BSD 3-Clause Clear License <https://github.c
    :hidden:
 
    Homepage <https://cs.unc.edu/~louielu/p/mmwave-capture-std>
+   Documentation <https://mmwave-capture-std.readthedocs.io/en/latest/>
    Source Code <https://github.com/mmwave-capture-std/mmwave-capture-std>
    License <https://github.com/mmwave-capture-std/mmwave-capture-std/blob/main/LICENSE>
 
