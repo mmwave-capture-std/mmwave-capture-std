@@ -35,8 +35,8 @@ import pathlib
 
 import pytest
 
-import mmwavecapture.pcap
-from mmwavecapture.pcap import parser, cparser
+import mmwavecapture.parser.pcap
+from mmwavecapture.parser.pcap import parser, cparser
 
 
 @pytest.fixture

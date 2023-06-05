@@ -39,7 +39,7 @@ from collections import defaultdict
 from typing import Callable, Dict, Optional, Union
 
 import disspcap
-from mmwavecapture.pcap.layer7 import Raw, Config
+from mmwavecapture.parser.pcap.layer7 import Raw, Config
 
 
 class _PcapIterWrapper:
