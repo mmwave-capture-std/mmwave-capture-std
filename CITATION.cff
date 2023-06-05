@@ -8,16 +8,11 @@ message: >-
   metadata from this file.
 type: software
 authors:
-  - given-names: Shao-Jung
-    name-particle: Louie
+  - given-names: Shao-Jung (Louie)
     family-names: Lu
     email: louielu@cs.unc.edu
-identifiers:
-  - type: url
-    value: >-
-      https://github.com/mmwave-capture-std/mmwave-capture-std
 repository-code: 'https://github.com/mmwave-capture-std/mmwave-capture-std'
-url: 'https://github.com/mmwave-capture-std'
+url: 'https://www.cs.unc.edu/~louielu/p/mmwave-capture-std/'
 abstract: >-
   mmwave-capture-std is a fast, reliable, and replicable
   Texas Instruments millimeter-wave capture toolkit.
