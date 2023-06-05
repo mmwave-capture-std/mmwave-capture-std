@@ -1,6 +1,7 @@
 Millimeter-wave Capture Standard (mmwave-capture-std)
 =====================================================
 
+[![Documentation Status](https://readthedocs.org/projects/mmwave-capture-std/badge/?version=latest)](https://mmwave-capture-std.readthedocs.io/en/latest/?badge=latest)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![License: BSD 3-Clause-Clear](https://img.shields.io/badge/License-BSD%203--Clause--Clear-green.svg)](https://spdx.org/licenses/BSD-3-Clause-Clear.html)
 
