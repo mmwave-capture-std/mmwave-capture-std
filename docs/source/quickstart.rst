@@ -5,7 +5,7 @@ Quickstart
     :scale: 80%
     :align: center
 
-``mmwave-capture-std`` consists of 3 modules: mmwave hardware interface (:class:`~mmwavecapture.radar.Radar`, :class:`~mmwavecapture.dca1000.DCA1000`), data capture and hardware managing (:class:`~mmwavecapture.capture.capture`), and raw data parser (:class:`~mmwavecapture.pcap.cparser.PcapCparser`).
+``mmwave-capture-std`` consists of 3 modules: mmwave hardware interface (:class:`~mmwavecapture.radar.Radar`, :class:`~mmwavecapture.dca1000.DCA1000`), data capture and hardware managing (:class:`~mmwavecapture.capture.capture`), and raw data parser (:class:`~mmwavecapture.parser`).
 
 In the following quickstart, we will demonstrate how to use :class:`~mmwavecapture`
 to capture raw data from TI IWR1843 radar (IWR1843BOOST) and DCA1000EVM data capture card on Linux.
@@ -257,12 +257,12 @@ into a ``numpy.ndarray[numpy.complex64]`` array.
 
 .. code-block:: python
 
-    from mmwavecapture.pcap import cparser
+    from mmwavecapture.parser.pcap import PcapCparser
 
     pcap_file = ("example_dataset/capture_00000/"
                 "iwr1843/dca.pcap")
     data_ports = [4098]
-    pcap = cparser.PcapCparser(
+    pcap = PcapCparser(
                 pcap_file,
                 data_ports=data_ports,
                 lsb_quadrature=True,
