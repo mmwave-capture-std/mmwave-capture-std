@@ -34,7 +34,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict
+from typing import Any, Dict
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class PcapCparser:
         data_ports: list[int] = [4098],
         lsb_quadrature: bool = True,
         preprocessing: bool = True,
-    ):
+    ) -> None:
         self.pcap_file = pcap_file
         self.pcap = disspcap.Pcap(str(pcap_file))
         self.data_ports = data_ports
@@ -62,17 +62,17 @@ class PcapCparser:
         if preprocessing:
             self.preprocessing()
 
-    def preprocessing(self):
+    def preprocessing(self) -> None:
         self.pcap.dca_fetch_packets(self.data_ports)
         for port in self.data_ports:
             dd = self.pcap.get_dca_data(port)
             dd.convert_complex(True)
             self.dca_data[port] = dd
 
-    def validate_dca_data(self, port: int):
+    def validate_dca_data(self, port: int) -> bool:
         dd = self.dca_data[port]
         return not dd.is_out_of_order and dd.dca_report_tx_bytes == dd.received_rx_bytes
 
-    def get_complex(self, port: int):
+    def get_complex(self, port: int) -> np.ndarray[Any, np.dtype[np.complex64]]:
         dd = self.dca_data[port]
-        return np.array(dd, copy=False)
+        return np.array(dd, copy=False, dtype=np.complex64)
