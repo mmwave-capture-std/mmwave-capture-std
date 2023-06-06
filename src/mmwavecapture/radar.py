@@ -37,6 +37,7 @@ import enum
 import re
 import pathlib
 import time
+from typing import Optional
 
 import serial
 from loguru import logger
@@ -55,6 +56,63 @@ class RadarStatus(enum.IntEnum):
 
     # Explicitly stopped by `sensorStop`, hitting number of frames will not cause this
     STOPPED = 3
+
+
+class RadarCoreConfig:
+    def __init__(self, filename: Optional[pathlib.Path] = None):
+        #: The radar config
+        self._config: dict[str, list[str]] = {}
+
+        # XXX: only support reading from file at this moment
+        if filename is not None:
+            with open(filename) as f:
+                for n in f.readlines():
+                    if n.startswith("%") or " " not in n:
+                        continue
+                    cmd, args = n.strip().split(" ", 1)
+                    self._config[cmd] = args.split(" ")
+
+        #: Total number of frames to capture, 0 means infinite
+        self.frames: int = int(self._config["frameCfg"][3])
+
+        #: Frame period (ms)
+        self.frame_period: float = float(self._config["frameCfg"][4])
+
+        #: Number of chirps per frame
+        self.chirps: int = int(self._config["frameCfg"][2])
+
+        #: Total TX antennas
+        self.tx: int = bin(int(self._config["channelCfg"][1]))[2:].count("1")
+
+        #: Total RX antennas
+        self.rx: int = bin(int(self._config["channelCfg"][0]))[2:].count("1")
+
+        #: Total virtual antennas
+        self.virtual_antennas: int = self.tx * self.rx
+
+        #: Number of ADC samples per chirp
+        self.samples: int = int(self._config["profileCfg"][9])
+
+        #: Shape of the raw data considering TX and RX antennas.
+        #:
+        #: If the number of frames is 0, the first dimension will be -1
+        self.antenna_shape: tuple[int, int, int, int, int] = (
+            self.frames if self.frames != 0 else -1,
+            self.chirps,
+            self.tx,
+            self.rx,
+            self.samples,
+        )
+
+        #: Shape of the raw data considering virtual antennas
+        #:
+        #: If the number of frames is 0, the first dimension will be -1
+        self.virtual_shape: tuple[int, int, int, int] = (
+            self.frames if self.frames != 0 else -1,
+            self.chirps,
+            self.virtual_antennas,
+            self.samples,
+        )
 
 
 class Radar:
