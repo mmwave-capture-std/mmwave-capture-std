@@ -1,5 +1,15 @@
 dataset_dir = "dataset"
 
+[metadata]
+title = "Millimeter-wave test dataset"
+creator = "Louie Lu"
+subject = "mmwave, radar, xWR18xx"
+description = """
+Millimeter-wave test dataset.
+This is a general capture from ``mmwave-capture-std`` tests"""
+date = "<today>"
+license = "CC-BY-SA-4.0"
+
 [logging.stderr]
 enable = true
 level = "INFO"
