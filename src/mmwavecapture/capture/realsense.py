@@ -103,8 +103,11 @@ class Realsense(CaptureHardware):
         self._fps = fps
         self._resolution = resolution
         self._capture_frames = capture_frames
-        self._capture_thread: Optional[threading.Thread] = None
         self._rotate = rotate
+
+        # Capture thread
+        self._capture_thread: Optional[threading.Thread] = None
+        self._capture_start_event = threading.Event()
 
         # Realsense HW
         self._pipeline = rs.pipeline()
@@ -125,6 +128,21 @@ class Realsense(CaptureHardware):
         )
         self._pipeline.start(self._config)
 
+        # There is a huge latency when starting the camera
+        # to wait the frames, so start it earlier.
+        # This add additional overhead when init the hardware,
+        # but it's fine.
+        #
+        #  Line #      Hits         Time  Per Hit   % Time  Line Contents
+        #  ==============================================================
+        #      17         1      21155.3  21155.3      1.3      pp.start(config)
+        #      19         1     493007.5 493007.5     30.5      frames = pp.wait_for_frames()
+        #                       ^^^^^^^^----- This is a huge latency spike
+        #
+        #      25         1      30578.7  30578.7      1.9      frames = pp.wait_for_frames()
+        #
+        self._pipeline.wait_for_frames()
+
     def prepare_capture(self) -> None:
         if not self.base_path:
             raise ValueError("Base path not set")
@@ -139,11 +157,17 @@ class Realsense(CaptureHardware):
 
         self._capture_thread = threading.Thread(target=self._capture)
 
+        # We start the camera and queue the frame, because of the
+        # camera latency
+        #
+        # Ref: https://dev.intelrealsense.com/docs/rs-latency-tool
+        # Mine is 90ms, set to 3 (90ms / 30 fps)
+        self._capture_thread.start()
+
     def _capture(self) -> None:
         if not self._colorwriter:
             raise ValueError("Color writer not initialized")
 
-        # https://dev.intelrealsense.com/docs/rs-latency-tool
         # Mine is 90ms, set to 3 (90ms / 30 fps)
         LATENCY_SKIP = 3
         current_frame = 0
@@ -153,17 +177,24 @@ class Realsense(CaptureHardware):
             if not color_frame:
                 continue
 
+            # Convert color frame to color image
+            color_image = np.asanyarray(color_frame.get_data())
+
+            # Wait for the capture to start
+            if not self._capture_start_event.is_set():
+                continue
+
+            # Increment frame number
             current_frame += 1
 
-            # Skip latency packet
+            # Skip latency frames
             if current_frame - 1 < LATENCY_SKIP:
                 continue
 
             # Write to file
-            color_image = np.asanyarray(color_frame.get_data())
             if self._rotate:
                 color_image = cv2.rotate(color_image, cv2.ROTATE_90_CLOCKWISE)
-            color_image = stamp_framenum(color_image, current_frame - LATENCY_SKIP)
+            color_image = stamp_framenum(color_image, current_frame - LATENCY_SKIP - 1)
             self._colorwriter.write(color_image)
 
     def start_capture(self) -> None:
@@ -171,7 +202,8 @@ class Realsense(CaptureHardware):
             raise ValueError("Color writer not initialized")
         if not self._capture_thread:
             raise ValueError("Capture thread not initialized")
-        self._capture_thread.start()
+
+        self._capture_start_event.set()
 
     def stop_capture(self) -> None:
         if not self._colorwriter:
