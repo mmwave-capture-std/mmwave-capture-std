@@ -107,6 +107,7 @@ class Realsense(CaptureHardware):
         resolution: Tuple[int, int] = (1920, 1080),
         capture_frames: int = 150,
         rotate: bool = False,
+        latency_skip_frames: int = 3,
         **kwargs: Dict[str, Any],
     ) -> None:
         self.hw_name = hw_name
@@ -114,6 +115,7 @@ class Realsense(CaptureHardware):
         self._resolution = resolution
         self._capture_frames = capture_frames
         self._rotate = rotate
+        self._latency_skip_frames = latency_skip_frames
 
         # Capture thread
         self._capture_thread: Optional[threading.Thread] = None
@@ -181,10 +183,8 @@ class Realsense(CaptureHardware):
         if not self._colorwriter:
             raise ValueError("Color writer not initialized")
 
-        # Mine is 90ms, set to 3 (90ms / 30 fps)
-        LATENCY_SKIP = 3
         current_frame = 0
-        while current_frame != self._capture_frames + LATENCY_SKIP:
+        while current_frame != self._capture_frames + self._latency_skip_frames:
             frames = self._pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
             if not color_frame:
@@ -201,14 +201,14 @@ class Realsense(CaptureHardware):
             current_frame += 1
 
             # Skip latency frames
-            if current_frame - 1 < LATENCY_SKIP:
+            if current_frame - 1 < self._latency_skip_frames:
                 continue
 
             # Write to file
             if self._rotate:
                 color_image = cv2.rotate(color_image, cv2.ROTATE_90_CLOCKWISE)
 
-            stamp_frame_num = current_frame - LATENCY_SKIP - 1
+            stamp_frame_num = current_frame - self._latency_skip_frames - 1
             color_image = stamp_framenum(color_image, stamp_frame_num)
             self._colorwriter.write(color_image)
 
