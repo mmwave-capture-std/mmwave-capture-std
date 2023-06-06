@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import abc
+import datetime
 import importlib
 import pathlib
 import sys
@@ -262,6 +263,27 @@ class CaptureManager:
         # Validate configuration
         if "dataset_dir" not in self._config:
             raise RuntimeError("`dataset_dir` is not specified in config")
+
+        if "metadata" not in self._config:
+            raise ValueError("No `metadata` section in config file")
+
+        # Process dataset metadata and auto generated elements
+        if "date" not in self._config["metadata"]:
+            raise ValueError("No `date` in `metadata` section")
+
+        DEFAULTS_ELEMENTS = [
+            ("title", "Millimeter-wave dataset"),
+            ("creator", "unknown"),
+            ("subject", ""),
+            ("description", ""),
+            ("license", "CC-BY-SA-4.0"),
+        ]
+        for elem, default in DEFAULTS_ELEMENTS:
+            value = self._config["metadata"].get(elem, default)
+            self._config["metadata"][elem] = value
+
+        if self._config["metadata"]["date"] == "<today>":
+            self._config["metadata"]["date"] = datetime.datetime.now()
 
     def _get_next_capture_dir(self) -> pathlib.Path:
         dir_names = [
