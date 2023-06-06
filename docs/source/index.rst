@@ -97,6 +97,7 @@ This project is licensed under the `BSD 3-Clause Clear License <https://github.c
 
    setup
    quickstart
+   configs/index
 
 .. toctree::
    :caption: Development
