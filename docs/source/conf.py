@@ -31,3 +31,16 @@ exclude_patterns = []  # type: ignore
 
 html_theme = "furo"
 html_static_path = ["_static"]
+
+
+# -- Extension interface -------------------------------------------------------
+def setup(app):
+    from sphinx.ext.autodoc import cut_lines  # type: ignore[import]
+    from sphinx.util.docfields import GroupedField  # type: ignore[import]
+
+    app.add_object_type(
+        "confval",
+        "confval",
+        objname="configuration value",
+        indextemplate="pair: %s; configuration value",
+    )
