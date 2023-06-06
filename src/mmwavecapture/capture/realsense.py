@@ -31,9 +31,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import annotations
+
+import json
 import threading
 import pathlib
-from typing import Optional, Tuple, Any, Dict
+from typing import Optional, Tuple, Any, Dict, NamedTuple
 
 import cv2
 import pyrealsense2 as rs
@@ -87,8 +90,15 @@ def stamp_framenum(img: np.ndarray, frame: int) -> np.ndarray:
     return img
 
 
+class ColorMetadata(NamedTuple):
+    frame_num: int
+    timestamp: float
+    stamp_frame_num: int
+
+
 class Realsense(CaptureHardware):
     COLOR_OUTPUT_FILENAME = "color.avi"
+    COLOR_METADATA_FILENAME = "color_metadata.json"
 
     def __init__(
         self,
@@ -115,6 +125,9 @@ class Realsense(CaptureHardware):
 
         # Output video file
         self._colorwriter: Optional[cv2.VideoWriter] = None
+
+        # Metadata
+        self._color_metadata: list[dict] = []
 
         self.init_capture_hw()
 
@@ -194,8 +207,20 @@ class Realsense(CaptureHardware):
             # Write to file
             if self._rotate:
                 color_image = cv2.rotate(color_image, cv2.ROTATE_90_CLOCKWISE)
-            color_image = stamp_framenum(color_image, current_frame - LATENCY_SKIP - 1)
+
+            stamp_frame_num = current_frame - LATENCY_SKIP - 1
+            color_image = stamp_framenum(color_image, stamp_frame_num)
             self._colorwriter.write(color_image)
+
+            # Record metadata
+            color_meta = ColorMetadata(
+                frame_num=frames.frame_number,
+                timestamp=frames.timestamp,
+                stamp_frame_num=stamp_frame_num,
+            )
+            # XXX: Sad not to preserve `ColorMetadata` type,
+            #      but I don't want to spend time on this
+            self._color_metadata.append(color_meta._asdict())
 
     def start_capture(self) -> None:
         if not self._colorwriter:
@@ -216,4 +241,7 @@ class Realsense(CaptureHardware):
         self._pipeline.stop()
 
     def dump_config(self) -> None:
-        pass
+        if not self.base_path:
+            raise ValueError("Base path not set")
+        with open(self.base_path / self.COLOR_METADATA_FILENAME, "w") as f:
+            json.dump(self._color_metadata, f, indent=4)
