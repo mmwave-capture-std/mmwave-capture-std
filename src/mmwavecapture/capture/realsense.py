@@ -31,9 +31,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import annotations
+
+import json
 import threading
 import pathlib
-from typing import Optional, Tuple, Any, Dict
+from typing import Optional, Tuple, Any, Dict, NamedTuple
 
 import cv2
 import pyrealsense2 as rs
@@ -87,8 +90,15 @@ def stamp_framenum(img: np.ndarray, frame: int) -> np.ndarray:
     return img
 
 
+class ColorMetadata(NamedTuple):
+    frame_num: int
+    timestamp: float
+    stamp_frame_num: int
+
+
 class Realsense(CaptureHardware):
     COLOR_OUTPUT_FILENAME = "color.avi"
+    COLOR_METADATA_FILENAME = "color_metadata.json"
 
     def __init__(
         self,
@@ -97,14 +107,19 @@ class Realsense(CaptureHardware):
         resolution: Tuple[int, int] = (1920, 1080),
         capture_frames: int = 150,
         rotate: bool = False,
+        latency_skip_frames: int = 3,
         **kwargs: Dict[str, Any],
     ) -> None:
         self.hw_name = hw_name
         self._fps = fps
         self._resolution = resolution
         self._capture_frames = capture_frames
-        self._capture_thread: Optional[threading.Thread] = None
         self._rotate = rotate
+        self._latency_skip_frames = latency_skip_frames
+
+        # Capture thread
+        self._capture_thread: Optional[threading.Thread] = None
+        self._capture_start_event = threading.Event()
 
         # Realsense HW
         self._pipeline = rs.pipeline()
@@ -112,6 +127,9 @@ class Realsense(CaptureHardware):
 
         # Output video file
         self._colorwriter: Optional[cv2.VideoWriter] = None
+
+        # Metadata
+        self._color_metadata: list[dict] = []
 
         self.init_capture_hw()
 
@@ -124,6 +142,21 @@ class Realsense(CaptureHardware):
             self._fps,
         )
         self._pipeline.start(self._config)
+
+        # There is a huge latency when starting the camera
+        # to wait the frames, so start it earlier.
+        # This add additional overhead when init the hardware,
+        # but it's fine.
+        #
+        #  Line #      Hits         Time  Per Hit   % Time  Line Contents
+        #  ==============================================================
+        #      17         1      21155.3  21155.3      1.3      pp.start(config)
+        #      19         1     493007.5 493007.5     30.5      frames = pp.wait_for_frames()
+        #                       ^^^^^^^^----- This is a huge latency spike
+        #
+        #      25         1      30578.7  30578.7      1.9      frames = pp.wait_for_frames()
+        #
+        self._pipeline.wait_for_frames()
 
     def prepare_capture(self) -> None:
         if not self.base_path:
@@ -139,39 +172,63 @@ class Realsense(CaptureHardware):
 
         self._capture_thread = threading.Thread(target=self._capture)
 
+        # We start the camera and queue the frame, because of the
+        # camera latency
+        #
+        # Ref: https://dev.intelrealsense.com/docs/rs-latency-tool
+        # Mine is 90ms, set to 3 (90ms / 30 fps)
+        self._capture_thread.start()
+
     def _capture(self) -> None:
         if not self._colorwriter:
             raise ValueError("Color writer not initialized")
 
-        # https://dev.intelrealsense.com/docs/rs-latency-tool
-        # Mine is 90ms, set to 3 (90ms / 30 fps)
-        LATENCY_SKIP = 3
         current_frame = 0
-        while current_frame != self._capture_frames + LATENCY_SKIP:
+        while current_frame != self._capture_frames + self._latency_skip_frames:
             frames = self._pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
             if not color_frame:
                 continue
 
+            # Convert color frame to color image
+            color_image = np.asanyarray(color_frame.get_data())
+
+            # Wait for the capture to start
+            if not self._capture_start_event.is_set():
+                continue
+
+            # Increment frame number
             current_frame += 1
 
-            # Skip latency packet
-            if current_frame - 1 < LATENCY_SKIP:
+            # Skip latency frames
+            if current_frame - 1 < self._latency_skip_frames:
                 continue
 
             # Write to file
-            color_image = np.asanyarray(color_frame.get_data())
             if self._rotate:
                 color_image = cv2.rotate(color_image, cv2.ROTATE_90_CLOCKWISE)
-            color_image = stamp_framenum(color_image, current_frame - LATENCY_SKIP)
+
+            stamp_frame_num = current_frame - self._latency_skip_frames - 1
+            color_image = stamp_framenum(color_image, stamp_frame_num)
             self._colorwriter.write(color_image)
+
+            # Record metadata
+            color_meta = ColorMetadata(
+                frame_num=frames.frame_number,
+                timestamp=frames.timestamp,
+                stamp_frame_num=stamp_frame_num,
+            )
+            # XXX: Sad not to preserve `ColorMetadata` type,
+            #      but I don't want to spend time on this
+            self._color_metadata.append(color_meta._asdict())
 
     def start_capture(self) -> None:
         if not self._colorwriter:
             raise ValueError("Color writer not initialized")
         if not self._capture_thread:
             raise ValueError("Capture thread not initialized")
-        self._capture_thread.start()
+
+        self._capture_start_event.set()
 
     def stop_capture(self) -> None:
         if not self._colorwriter:
@@ -184,4 +241,7 @@ class Realsense(CaptureHardware):
         self._pipeline.stop()
 
     def dump_config(self) -> None:
-        pass
+        if not self.base_path:
+            raise ValueError("Base path not set")
+        with open(self.base_path / self.COLOR_METADATA_FILENAME, "w") as f:
+            json.dump(self._color_metadata, f, indent=4)
