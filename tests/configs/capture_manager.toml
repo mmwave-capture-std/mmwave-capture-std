@@ -34,5 +34,7 @@ capture_frames = 10
 hw_def_class = "mmwavecapture.capture.realsense.Realsense"
 fps = 30
 resolution = [1920, 1080]
+depth_resolution = [1280, 720]
 capture_frames = 30
 rotate = true
+latency_skip_frames = 3
