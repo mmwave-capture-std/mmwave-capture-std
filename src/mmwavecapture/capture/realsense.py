@@ -151,7 +151,11 @@ class DepthMetadata(NamedTuple):
 
 class DepthConfig:
     def __init__(
-        self, intrinsics: CameraIntrinsics, depth_units: float, fps: int
+        self,
+        intrinsics: CameraIntrinsics,
+        depth_units: float,
+        fps: int,
+        visual_preset: int,
     ) -> None:
         #: Camera intrinsics
         self.intrinsics: CameraIntrinsics = intrinsics
@@ -161,6 +165,9 @@ class DepthConfig:
 
         #: Frame per second
         self.fps: int = fps
+
+        #: Depth visual preset
+        self.visual_preset: int = visual_preset
 
 
 class Realsense(CaptureHardware):
@@ -180,6 +187,7 @@ class Realsense(CaptureHardware):
         capture_frames: int = 150,
         rotate: bool = False,
         latency_skip_frames: int = 3,
+        depth_visual_preset: int = 3,
         **kwargs: Dict[str, Any],
     ) -> None:
         self.hw_name = hw_name
@@ -189,6 +197,7 @@ class Realsense(CaptureHardware):
         self._capture_frames = capture_frames
         self._rotate = rotate
         self._latency_skip_frames = latency_skip_frames
+        self._depth_visual_preset = depth_visual_preset
 
         # Capture thread
         self._capture_thread: Optional[threading.Thread] = None
@@ -233,12 +242,15 @@ class Realsense(CaptureHardware):
 
         # Setup camera configs
         depth_sensor = profile.get_device().first_depth_sensor()
+        depth_sensor.set_option(rs.option.visual_preset, self._depth_visual_preset)
+
         depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
         depth_intrinsics = depth_profile.get_intrinsics()
         self._depth_config = DepthConfig(
             intrinsics=CameraIntrinsics(depth_intrinsics),
             depth_units=float(depth_sensor.get_option(rs.option.depth_units)),
             fps=self._fps,
+            visual_preset=self._depth_visual_preset,
         )
 
         color_sensor = profile.get_device().first_color_sensor()
