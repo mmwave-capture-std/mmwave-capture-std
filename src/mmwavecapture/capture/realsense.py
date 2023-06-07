@@ -224,6 +224,11 @@ class Realsense(CaptureHardware):
         self.init_capture_hw()
 
     def init_capture_hw(self) -> None:
+        # Setup depth config before pipeline
+        ctx = rs.context()
+        depth_sensor = ctx.query_devices()[0].first_depth_sensor()
+        depth_sensor.set_option(rs.option.visual_preset, self._depth_visual_preset)
+
         self._config.enable_stream(
             rs.stream.color,
             self._resolution[0],
@@ -242,8 +247,6 @@ class Realsense(CaptureHardware):
 
         # Setup camera configs
         depth_sensor = profile.get_device().first_depth_sensor()
-        depth_sensor.set_option(rs.option.visual_preset, self._depth_visual_preset)
-
         depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
         depth_intrinsics = depth_profile.get_intrinsics()
         self._depth_config = DepthConfig(
