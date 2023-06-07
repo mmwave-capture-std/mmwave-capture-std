@@ -36,11 +36,12 @@ from __future__ import annotations
 import json
 import threading
 import pathlib
-from typing import Optional, Tuple, Any, Dict, NamedTuple
+from typing import Optional, Tuple, Any, Dict, NamedTuple, BinaryIO
 
 import cv2
 import pyrealsense2 as rs
 import numpy as np
+import zstandard as zstd
 from loguru import logger
 
 from mmwavecapture.capture.capture import CaptureHardware
@@ -90,21 +91,92 @@ def stamp_framenum(img: np.ndarray, frame: int) -> np.ndarray:
     return img
 
 
+class CameraIntrinsics:
+    """Camera intrinsics
+
+    Ref: https://intelrealsense.github.io/librealsense/python_docs/_generated/pyrealsense2.intrinsics.html
+    """
+
+    def __init__(self, intrinsics: rs.pyrealsense2.intrinsics) -> None:
+        self.width: int = intrinsics.width
+        self.height: int = intrinsics.height
+
+        #: Focal length of the image plane, as a multiple of pixel width
+        self.fx: float = intrinsics.fx
+
+        #: Focal length of the image plane, as a multiple of pixel height
+        self.fy: float = intrinsics.fy
+
+        #: Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge
+        self.ppx: float = intrinsics.ppx
+
+        #: Vertical coordinate of the principal point of the image, as a pixel offset from the top edge
+        self.ppy: float = intrinsics.ppy
+
+        #: Distortion model of the image
+        self.model: str = intrinsics.model.name
+
+        #: Distortion coefficients
+        self.coeffs: list[float] = intrinsics.coeffs[:]
+
+
 class ColorMetadata(NamedTuple):
     frame_num: int
     timestamp: float
     stamp_frame_num: int
+    time_of_arrival: float
+    backend_timestamp: float
+    frame_timestamp: float
+    actual_fps: int
+
+
+class ColorConfig:
+    def __init__(self, intrinsics: CameraIntrinsics, fps: int) -> None:
+        #: Camera intrinsics
+        self.intrinsics: CameraIntrinsics = intrinsics
+
+        #: Frame per second
+        self.fps: int = fps
+
+
+class DepthMetadata(NamedTuple):
+    frame_num: int
+    timestamp: float
+    stamp_frame_num: int
+    time_of_arrival: float
+    backend_timestamp: float
+    frame_timestamp: float
+    actual_fps: int
+
+
+class DepthConfig:
+    def __init__(
+        self, intrinsics: CameraIntrinsics, depth_units: float, fps: int
+    ) -> None:
+        #: Camera intrinsics
+        self.intrinsics: CameraIntrinsics = intrinsics
+
+        #: Depth units
+        self.depth_units: float = depth_units
+
+        #: Frame per second
+        self.fps: int = fps
 
 
 class Realsense(CaptureHardware):
     COLOR_OUTPUT_FILENAME = "color.avi"
+    COLOR_CONFIG_FILENAME = "color_config.json"
     COLOR_METADATA_FILENAME = "color_metadata.json"
+    DEPTH_OUTPUT_FILENAME = "depth.zst"
+    DEPTH_CONFIG_FILENAME = "depth_config.json"
+    DEPTH_METADATA_FILENAME = "depth_metadata.json"
 
     def __init__(
         self,
         hw_name: str,
         fps: int = 30,
         resolution: Tuple[int, int] = (1920, 1080),
+        depth_resolution: Tuple[int, int] = (1280, 720),
         capture_frames: int = 150,
         rotate: bool = False,
         latency_skip_frames: int = 3,
@@ -113,6 +185,7 @@ class Realsense(CaptureHardware):
         self.hw_name = hw_name
         self._fps = fps
         self._resolution = resolution
+        self._depth_resolution = depth_resolution
         self._capture_frames = capture_frames
         self._rotate = rotate
         self._latency_skip_frames = latency_skip_frames
@@ -128,8 +201,16 @@ class Realsense(CaptureHardware):
         # Output video file
         self._colorwriter: Optional[cv2.VideoWriter] = None
 
+        # Output depth file
+        self._depthcctx = zstd.ZstdCompressor(level=3)
+        self._depthfh: Optional[BinaryIO] = None
+        self._depthwriter: Optional[zstd.ZstdCompressionWriter] = None
+
         # Metadata
+        self._color_config: Optional[ColorConfig] = None
+        self._depth_config: Optional[DepthConfig] = None
         self._color_metadata: list[dict] = []
+        self._depth_metadata: list[dict] = []
 
         self.init_capture_hw()
 
@@ -141,7 +222,32 @@ class Realsense(CaptureHardware):
             rs.format.bgr8,
             self._fps,
         )
-        self._pipeline.start(self._config)
+        self._config.enable_stream(
+            rs.stream.depth,
+            self._depth_resolution[0],
+            self._depth_resolution[1],
+            rs.format.z16,
+            self._fps,
+        )
+        profile = self._pipeline.start(self._config)
+
+        # Setup camera configs
+        depth_sensor = profile.get_device().first_depth_sensor()
+        depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+        depth_intrinsics = depth_profile.get_intrinsics()
+        self._depth_config = DepthConfig(
+            intrinsics=CameraIntrinsics(depth_intrinsics),
+            depth_units=float(depth_sensor.get_option(rs.option.depth_units)),
+            fps=self._fps,
+        )
+
+        color_sensor = profile.get_device().first_color_sensor()
+        color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
+        color_intrinsics = color_profile.get_intrinsics()
+        self._color_config = ColorConfig(
+            intrinsics=CameraIntrinsics(color_intrinsics),
+            fps=self._fps,
+        )
 
         # There is a huge latency when starting the camera
         # to wait the frames, so start it earlier.
@@ -156,7 +262,7 @@ class Realsense(CaptureHardware):
         #
         #      25         1      30578.7  30578.7      1.9      frames = pp.wait_for_frames()
         #
-        self._pipeline.wait_for_frames()
+        self._pipeline.wait_for_frames(10000)
 
     def prepare_capture(self) -> None:
         if not self.base_path:
@@ -170,6 +276,9 @@ class Realsense(CaptureHardware):
             1,
         )  # type: ignore
 
+        self._depthfh = open(self.base_path / self.DEPTH_OUTPUT_FILENAME, "wb")
+        self._depthwriter = self._depthcctx.stream_writer(self._depthfh)
+
         self._capture_thread = threading.Thread(target=self._capture)
 
         # We start the camera and queue the frame, because of the
@@ -182,16 +291,23 @@ class Realsense(CaptureHardware):
     def _capture(self) -> None:
         if not self._colorwriter:
             raise ValueError("Color writer not initialized")
+        if not self._depthwriter:
+            raise ValueError("Depth writer not initialized")
 
         current_frame = 0
         while current_frame != self._capture_frames + self._latency_skip_frames:
             frames = self._pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
-            if not color_frame:
+            depth_frame = frames.get_depth_frame()
+
+            if not color_frame or not depth_frame:
                 continue
 
             # Convert color frame to color image
             color_image = np.asanyarray(color_frame.get_data())
+
+            # Convert depth frame to depth image
+            depth_image = np.asanyarray(depth_frame.get_data())
 
             # Wait for the capture to start
             if not self._capture_start_event.is_set():
@@ -207,37 +323,73 @@ class Realsense(CaptureHardware):
             # Write to file
             if self._rotate:
                 color_image = cv2.rotate(color_image, cv2.ROTATE_90_CLOCKWISE)
+                depth_image = cv2.rotate(depth_image, cv2.ROTATE_90_CLOCKWISE)
 
             stamp_frame_num = current_frame - self._latency_skip_frames - 1
             color_image = stamp_framenum(color_image, stamp_frame_num)
             self._colorwriter.write(color_image)
+            self._depthwriter.write(depth_image.tobytes())
 
             # Record metadata
             color_meta = ColorMetadata(
                 frame_num=frames.frame_number,
                 timestamp=frames.timestamp,
                 stamp_frame_num=stamp_frame_num,
+                time_of_arrival=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.time_of_arrival
+                ),
+                backend_timestamp=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.backend_timestamp
+                ),
+                frame_timestamp=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.frame_timestamp
+                ),
+                actual_fps=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.actual_fps
+                ),
             )
+            depth_meta = DepthMetadata(
+                frame_num=frames.frame_number,
+                timestamp=frames.timestamp,
+                stamp_frame_num=stamp_frame_num,
+                time_of_arrival=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.time_of_arrival
+                ),
+                backend_timestamp=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.backend_timestamp
+                ),
+                frame_timestamp=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.frame_timestamp
+                ),
+                actual_fps=color_frame.get_frame_metadata(
+                    rs.frame_metadata_value.actual_fps
+                ),
+            )
+
             # XXX: Sad not to preserve `ColorMetadata` type,
             #      but I don't want to spend time on this
             self._color_metadata.append(color_meta._asdict())
+            self._depth_metadata.append(depth_meta._asdict())
 
     def start_capture(self) -> None:
         if not self._colorwriter:
             raise ValueError("Color writer not initialized")
+        if not self._depthwriter:
+            raise ValueError("Depth writer not initialized")
         if not self._capture_thread:
             raise ValueError("Capture thread not initialized")
 
         self._capture_start_event.set()
 
     def stop_capture(self) -> None:
-        if not self._colorwriter:
-            raise ValueError("Color writer not initialized")
-        if not self._capture_thread:
-            raise ValueError("Capture thread not initialized")
-
-        self._capture_thread.join()
-        self._colorwriter.release()
+        if self._capture_thread:
+            self._capture_thread.join()
+        if self._colorwriter:
+            self._colorwriter.release()
+        if self._depthwriter:
+            self._depthwriter.close()
+        if self._depthfh:
+            self._depthfh.close()
         self._pipeline.stop()
 
     def dump_config(self) -> None:
@@ -245,3 +397,9 @@ class Realsense(CaptureHardware):
             raise ValueError("Base path not set")
         with open(self.base_path / self.COLOR_METADATA_FILENAME, "w") as f:
             json.dump(self._color_metadata, f, indent=4)
+        with open(self.base_path / self.DEPTH_METADATA_FILENAME, "w") as f:
+            json.dump(self._depth_metadata, f, indent=4)
+        with open(self.base_path / self.COLOR_CONFIG_FILENAME, "w") as f:
+            json.dump(self._color_config, f, indent=4, default=vars)
+        with open(self.base_path / self.DEPTH_CONFIG_FILENAME, "w") as f:
+            json.dump(self._depth_config, f, indent=4, default=vars)

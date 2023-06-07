@@ -48,3 +48,12 @@ def test_hw_realsense(realsense, tmp_path):
     realsense.prepare_capture()
     realsense.start_capture()
     realsense.stop_capture()
+
+
+def test_hw_realsense_sensors_metadata(realsense):
+    assert realsense._color_config.intrinsics.width == realsense._resolution[0]
+    assert realsense._color_config.intrinsics.height == realsense._resolution[1]
+
+    assert realsense._depth_config.intrinsics.width == realsense._depth_resolution[0]
+    assert realsense._depth_config.intrinsics.height == realsense._depth_resolution[1]
+    assert realsense._depth_config.depth_units == 0.0010000000474974513
