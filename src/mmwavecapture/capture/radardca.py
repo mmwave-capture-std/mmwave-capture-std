@@ -33,6 +33,7 @@
 
 from __future__ import annotations
 
+import time
 import pathlib
 import signal
 import subprocess
@@ -183,6 +184,9 @@ class RadarDCA(CaptureHardware):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
+
+        # Wait tcpdump to start capture
+        time.sleep(0.1)  # XXX: Another constant?
 
         # Start DCA1000EVM
         self.dca.start_record()
