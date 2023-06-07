@@ -119,8 +119,8 @@ class RadarDCA(CaptureHardware):
             raise RuntimeError(f"DCA1000EVM connection error at {self._dca_ip}")
 
         # Initialize DCA1000EVM
-        self.dca.reset_fpga()
         self.dca.reset_radar()
+        self.dca.reset_fpga()
         self.dca.config_fpga()
         self.dca.config_packet_delay()
 
