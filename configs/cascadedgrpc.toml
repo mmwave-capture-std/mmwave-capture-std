@@ -1,0 +1,30 @@
+dataset_dir = "cascaded_dataset"
+
+[metadata]
+title = "Millimeter-wave dataset"
+creator = "Louie Lu"
+subject = "mmwave, radar, cascaded"
+description = """
+Millimeter-wave dataset.
+This is a general capture"""
+date = "<today>"
+license = "CC-BY-SA-4.0"
+
+[logging.stderr]
+enable = true
+level = "INFO"
+
+[logging.logfile]
+enable = true
+level = "TRACE"
+serialize = true
+
+[hardware.cascaded]
+hw_def_class = "mmwavecapture.capture.cascadedgrpc.CascadedGrpc"
+radar_config_filename = "configs/mmwaveconfig.txt"
+tda_ip = "192.168.33.180"
+tda_port = 5001
+grpc_server_ip = "localhost"
+grpc_server_port = 50051
+capture_frames = 20
+init_capture_hw = true
