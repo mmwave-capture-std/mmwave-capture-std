@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "std.mmwave.cascadedradar";
+option java_outer_classname = "CascadedRadarProto";
+option objc_class_prefix = "CascadedRadarProto";
+
+package cascadedradar;
+
+service CascadedRadar {
+	rpc SetConfigFilename(SetConfigFilenameRequest) returns (GeneralReply) {}
+	rpc SetCaptureDirectory(SetCaptureDirectoryRequest) returns (GeneralReply) {}
+	rpc SetCaptureFrames(SetCaptureFramesRequest) returns (GeneralReply) {}
+	rpc ConnectTda(ConnectTdaRequest) returns (GeneralReply) {}
+	rpc DisconnectTda(EmptyRequest) returns (GeneralReply) {}
+	rpc InitDevices(EmptyRequest) returns (GeneralReply) {}
+	rpc ConfigDevices(EmptyRequest) returns (GeneralReply) {}
+	rpc PrepareCapture(EmptyRequest) returns (GeneralReply) {}
+	rpc StartCapture(EmptyRequest) returns (GeneralReply) {}
+	rpc StopCapture(EmptyRequest) returns (GeneralReply) {}
+	rpc CleanUp(EmptyRequest) returns (GeneralReply) {}
+}
+
+message GeneralReply {
+	int32 ret_val = 1;
+}
+
+message EmptyRequest {
+}
+
+message SetConfigFilenameRequest {
+	string filename = 1;
+}
+
+message SetCaptureDirectoryRequest {
+	string directory = 1;
+}
+
+message SetCaptureFramesRequest {
+    int32 frames = 1;
+}
+
+message ConnectTdaRequest {
+	string ip = 1;
+	int32 port = 2;
+}
