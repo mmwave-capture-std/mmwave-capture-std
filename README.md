@@ -103,6 +103,17 @@ poetry install # Prepare env and install deps
 poetry run pre-commit install # Install pre-commit hooks
 ```
 
+Related Publications
+--------------------
+
+* mmCounter: Static People Counting in Dense Indoor Scenarios using mmWave Radar
+  - Tarik Reza Toha, Shao-Jung (Louie) Lu, and Shahriar Nirjon
+  - The 22nd International Conference on Embedded Wireless Systems and Networks (EWSN '25)
+
+* mmDefender: A mmWave System for On-Body Localization of Concealed Threats in Moving Persons
+  - Shao-Jung (Louie) Lu, Mahathir Monjur, Sirajum Munir, and Shahriar Nirjon
+  - The 22nd International Conference on Embedded Wireless Systems and Networks (EWSN '25)
+
 LICENSE
 -------
 
