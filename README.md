@@ -99,7 +99,7 @@ Use the following snippet to setup your development environment:
 ```bash
 git clone <repo-url>
 cd mmwave-capture-std
-uv install # Prepare env and install deps
+uv sync # Prepare env and install deps
 uv run pre-commit install # Install pre-commit hooks
 ```
 

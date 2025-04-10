@@ -49,7 +49,7 @@ Dependencies Installation
 
    git clone git@github.com:mmwave-capture-std/mmwave-capture-std.git
    cd mmwave-capture-std
-   uv install
+   uv sync
 
 Hardware
 --------
