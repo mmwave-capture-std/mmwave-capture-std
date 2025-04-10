@@ -1,36 +1,49 @@
-[tool.poetry]
+[project]
 name = "mmwave-capture-std"
 version = "0.1.0"
 description = "**mmwave-capture-std** is a *fast*, *reliable*, and *replicable* Texas Instruments millimeter-wave capture toolkit."
-authors = ["Louie Lu <git@louie.lu>"]
-license = "BSD-3-Clause-Clear"
+authors = [{ name = "Louie Lu", email = "git@louie.lu" }]
+requires-python = "~=3.8"
 readme = "README.md"
-packages = [{include = "mmwavecapture", from = "src" }]
+license = "BSD-3-Clause-Clear"
+dependencies = [
+    "pytest>=7.3.1,<8",
+    "numpy>=1.24.3,<2",
+    "disspcap",
+    "pyserial~=3.5",
+    "loguru>=0.7.0,<0.8",
+    "pre-commit>=3.3.2,<4",
+    "netifaces==0.11.0",
+    "toml>=0.10.2,<0.11",
+    "pyrealsense2>=2.53.1.4623,<3",
+    "opencv-python>=4.7.0.72,<5",
+    "click>=8.1.3,<9",
+    "sphinx>=7.0.1,<8",
+    "furo>=2023.5.20,<2024",
+    "sphinx-autobuild>=2021.3.14,<2022",
+    "zstandard>=0.21.0,<0.22",
+]
 
-[tool.poetry.scripts]
+[project.scripts]
 mmwavecapture-std = "mmwavecapture.cli:cli"
 
-[tool.poetry.dependencies]
-python = "^3.8"
-pytest = "^7.3.1"
-numpy = "^1.24.3"
-disspcap = {git = "https://github.com/mlouielu/disspcap.git", rev = "dev"}
-pyserial = "^3.5"
-loguru = "^0.7.0"
-pre-commit = "^3.3.2"
-netifaces = "0.11.0"
-toml = "^0.10.2"
-pyrealsense2 = "^2.53.1.4623"
-opencv-python = "^4.7.0.72"
-click = "^8.1.3"
-sphinx = "^7.0.1"
-furo = "^2023.5.20"
-sphinx-autobuild = "^2021.3.14"
-zstandard = "^0.21.0"
+[tool.uv]
+
+[tool.uv.sources]
+disspcap = { git = "https://github.com/mlouielu/disspcap.git", rev = "dev" }
+
+[tool.hatch.build.targets.sdist]
+include = ["src/mmwavecapture"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/mmwavecapture"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/mmwavecapture" = "mmwavecapture"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.mypy]
 python_version = "3.8"
@@ -50,8 +63,6 @@ strict_equality = true
 warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
-#warn_return_any = true
-#warn_unreachable = true
 
 [[tool.mypy.overrides]]
 module = [
