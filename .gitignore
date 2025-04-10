@@ -9,3 +9,5 @@ dataset/
 docs/build/
 configs/
 /*.pcap
+docs/source/_build/
+docs/source/html/
