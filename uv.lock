@@ -418,38 +418,50 @@ source = { editable = "." }
 dependencies = [
     { name = "click" },
     { name = "disspcap" },
-    { name = "furo" },
     { name = "loguru" },
     { name = "netifaces" },
     { name = "numpy" },
     { name = "opencv-python" },
-    { name = "pre-commit" },
     { name = "pyrealsense2" },
     { name = "pyserial" },
-    { name = "pytest" },
-    { name = "sphinx" },
-    { name = "sphinx-autobuild" },
     { name = "toml" },
     { name = "zstandard" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+    { name = "pytest" },
+]
+docs = [
+    { name = "furo" },
+    { name = "sphinx" },
+    { name = "sphinx-autobuild" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.3,<9" },
     { name = "disspcap", git = "https://github.com/mlouielu/disspcap.git?rev=dev" },
-    { name = "furo", specifier = ">=2023.5.20,<2024" },
     { name = "loguru", specifier = ">=0.7.0,<0.8" },
     { name = "netifaces", specifier = "==0.11.0" },
     { name = "numpy", specifier = ">=1.24.3,<2" },
     { name = "opencv-python", specifier = ">=4.7.0.72,<5" },
-    { name = "pre-commit", specifier = ">=3.3.2,<4" },
     { name = "pyrealsense2", specifier = ">=2.53.1.4623,<3" },
     { name = "pyserial", specifier = "~=3.5" },
-    { name = "pytest", specifier = ">=7.3.1,<8" },
-    { name = "sphinx", specifier = ">=7.0.1,<8" },
-    { name = "sphinx-autobuild", specifier = ">=2021.3.14,<2022" },
     { name = "toml", specifier = ">=0.10.2,<0.11" },
     { name = "zstandard", specifier = ">=0.21.0,<0.22" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pre-commit", specifier = ">=3.3.2,<4" },
+    { name = "pytest", specifier = ">=7.3.2" },
+]
+docs = [
+    { name = "furo", specifier = ">=2023.5.20,<2024" },
+    { name = "sphinx", specifier = ">=7.0.1,<8" },
+    { name = "sphinx-autobuild", specifier = ">=2021.3.14,<2022" },
 ]
 
 [[package]]

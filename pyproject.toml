@@ -7,20 +7,15 @@ requires-python = "~=3.8"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
 dependencies = [
-    "pytest>=7.3.1,<8",
     "numpy>=1.24.3,<2",
     "disspcap",
     "pyserial~=3.5",
     "loguru>=0.7.0,<0.8",
-    "pre-commit>=3.3.2,<4",
     "netifaces==0.11.0",
     "toml>=0.10.2,<0.11",
     "pyrealsense2>=2.53.1.4623,<3",
     "opencv-python>=4.7.0.72,<5",
     "click>=8.1.3,<9",
-    "sphinx>=7.0.1,<8",
-    "furo>=2023.5.20,<2024",
-    "sphinx-autobuild>=2021.3.14,<2022",
     "zstandard>=0.21.0,<0.22",
 ]
 
@@ -44,6 +39,18 @@ include = ["src/mmwavecapture"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.3.2",
+    "pre-commit>=3.3.2,<4",
+]
+
+docs = [
+    "sphinx>=7.0.1,<8",
+    "furo>=2023.5.20,<2024",
+    "sphinx-autobuild>=2021.3.14,<2022",
+]
 
 [tool.mypy]
 python_version = "3.8"
