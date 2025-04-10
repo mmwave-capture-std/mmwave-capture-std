@@ -160,7 +160,7 @@ with the configuration provided in ``cm_config_file``.
 
 .. code-block:: bash
 
-    ☁  mmwave-capture-std [add-docs] ⚡  poetry run python
+    ☁  mmwave-capture-std [add-docs] ⚡  uv run python
     Python 3.10.10 (main, Mar  5 2023, 22:26:53) [GCC 12.2.1 20230201] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import mmwavecapture.capture

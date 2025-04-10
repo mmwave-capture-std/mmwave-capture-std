@@ -17,7 +17,7 @@ System requirements
 Dependencies Installation
 `````````````````````````
 
-- Poetry: `Poetry Installation <https://python-poetry.org/docs/#installation>`_
+- uv: `uv Installation <https://docs.astral.sh/uv/getting-started/installation/>`_
 - tcpdump:
     - `tcpdump latest releases <https://www.tcpdump.org/#latest-releases>`_
     - For Linux and UNIX systems, check the package name for your distribution from here:
@@ -49,7 +49,7 @@ Dependencies Installation
 
    git clone git@github.com:mmwave-capture-std/mmwave-capture-std.git
    cd mmwave-capture-std
-   poetry install
+   uv install
 
 Hardware
 --------

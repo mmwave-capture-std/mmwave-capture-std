@@ -15,9 +15,9 @@ build:
     - libusb-1.0-0
   jobs:
     post_install:
-      - pip install poetry==1.4.0
-      - poetry config virtualenvs.create false
-      - poetry install --with=doc
+      - pip install uv
+      - uv config virtualenvs.create false
+      - uv install --with=doc
 
 
 # Build documentation in the docs/ directory with Sphinx

@@ -411,10 +411,10 @@ class DCA1000:
         # XXX: It will not return anything worth, you can test it as below:
         #        1. Connect the DCA1000 to the host computer
         #        2. Do not start the radar
-        #        3. Run `record_start` ($ poetry run pytest -k test_record_start)
+        #        3. Run `record_start` ($ uv run pytest -k test_record_start)
         #        4. Wait until DCA1000 get LVDS timeout error (about 10 seconds)
         #           you can see a red led of `LVDS_PATH_ERR` is light on your DCA1000 board
-        #        5. Run `system_error_status` ($ poetry run pytest -k test_system_error_status)
+        #        5. Run `system_error_status` ($ uv run pytest -k test_system_error_status)
         #        6. You will see it return `0`, but it should be other value
         # Ref: RF_API/configdatarecv.cpp
         return self._send_dca_command(
