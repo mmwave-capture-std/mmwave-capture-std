@@ -22,7 +22,7 @@ Here is an example of using ``mmwave-capture-std`` to capture mmwave data from I
 
 .. code-block:: bash
 
-   $ poetry run mmwavecapture-std examples/capture_iwr1843.toml
+   $ uv run mmwavecapture-std examples/capture_iwr1843.toml
    2023-06-02 :43.91 | INFO     | ...:...:225 - Capture ID: 0
    2023-06-02 :43.91 | INFO     | ...:init_hw:230 - Initializing capture hardware `iwr1843`..
    2023-06-02 :49.32 | SUCCESS  | ...:init_hw:245 - Capture hardware `iwr1843` initialized
@@ -81,8 +81,8 @@ Use the following snippet to setup your development environment:
 
    git clone <repo-url>
    cd mmwave-capture-std
-   poetry install # Prepare env and install deps
-   poetry run pre-commit install # Install pre-commit hooks
+   uv sync # Prepare env and install deps
+   uv run pre-commit install # Install pre-commit hooks
 
 License
 -------
