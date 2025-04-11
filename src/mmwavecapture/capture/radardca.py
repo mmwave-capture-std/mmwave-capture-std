@@ -36,7 +36,9 @@ from __future__ import annotations
 import time
 import pathlib
 import signal
+import struct
 import subprocess
+import threading
 from typing import Any, Dict
 
 import netifaces
@@ -45,6 +47,101 @@ from loguru import logger
 import mmwavecapture.dca1000
 import mmwavecapture.radar
 from mmwavecapture.capture.capture import CaptureHardware
+
+
+class TcpdumpCapture:
+    def __init__(self, tcpdump_bin: str, interface: str, dca_ip: str):
+        self.tcpdump_bin = tcpdump_bin
+        self.interface = interface
+        self.dca_ip = dca_ip
+        self.file_capture_proc = None
+        self.stream_capture_proc = None
+        self.stream_thread = None
+        self.stop_event = threading.Event()
+
+    def start_file_capture(self, outfile: Path):
+        self.file_capture_proc = subprocess.Popen(
+            [
+                self.tcpdump_bin,
+                "-i",
+                self.interface,
+                "-qtn",
+                f"udp and host {self.dca_ip}",
+                "-w",
+                str(outfile),
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.info(f"Started packet capture to file {outfile}")
+
+    def start_stream_capture(self, packet_aggregator):
+        self.stream_capture_proc = subprocess.Popen(
+            [
+                self.tcpdump_bin,
+                "-i",
+                self.interface,
+                "-qtn",
+                "-U",
+                f"udp and host {self.dca_ip}",
+                "-w",
+                "-",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+
+        pcap_header = self.stream_capture_proc.stdout.read(24)
+        if len(pcap_header) < 24:
+            raise RuntimeError("Failed to read pcap header from tcpdump")
+
+        magic, v_major, v_minor, *_ = struct.unpack("=IHHiIII", pcap_header)
+        logger.debug(f"Pcap header: magic=0x{magic:08x}, version={v_major}.{v_minor}")
+
+        if magic not in (0xA1B2C3D4, 0xD4C3B2A1):
+            raise RuntimeError(f"Invalid pcap magic number: 0x{magic:08x}")
+
+        self.stop_event.clear()
+        self.stream_thread = threading.Thread(
+            target=self._stream_packets,
+            args=(self.stream_capture_proc.stdout, packet_aggregator),
+            daemon=True,
+        )
+        self.stream_thread.start()
+        logger.info("Started tcpdump stream capture")
+
+    def _stream_packets(self, stdout_pipe, aggregator):
+        while not self.stop_event.is_set():
+            header = stdout_pipe.read(16)
+            if not header or len(header) < 16:
+                logger.debug("End of stream or error reading packet header")
+                return
+            ts_sec, ts_usec, caplen, origlen = struct.unpack("=IIII", header)
+            data = stdout_pipe.read(caplen)
+            if not data or len(data) < caplen:
+                logger.error(
+                    f"Incomplete packet data: expected {caplen}, got {len(data)}"
+                )
+                return
+            aggregator.push_packet(header, data)
+
+    def stop(self):
+        if self.file_capture_proc:
+            self.file_capture_proc.send_signal(signal.SIGUSR2)
+            self.file_capture_proc.send_signal(signal.SIGINT)
+            self.file_capture_proc.wait()
+            logger.info("Stopped file capture")
+
+        if self.stream_capture_proc:
+            self.stop_event.set()
+            self.stream_capture_proc.send_signal(signal.SIGUSR2)
+            self.stream_capture_proc.send_signal(signal.SIGINT)
+            self.stream_capture_proc.wait()
+            logger.info("Stopped stream capture")
+
+        if self.stream_thread and self.stream_thread.is_alive():
+            self.stream_thread.join(timeout=3.0)
+            logger.info("Stopped stream thread")
 
 
 class RadarDCA(CaptureHardware):
@@ -79,8 +176,7 @@ class RadarDCA(CaptureHardware):
         self._capture_frames = capture_frames
         self._init_capture_hw = init_capture_hw
 
-        # tcpdump
-        self._cap_tcpdump = None
+        # Process handles
         self._catcher = None
 
         # DCA interface & host IP check
@@ -110,6 +206,9 @@ class RadarDCA(CaptureHardware):
             capture_frames=self._capture_frames,
         )
 
+        # Tcpdump
+        self.tcpdump = TcpdumpCapture(self.TCPDUMP_BIN_PATH, dca_eth_interface, dca_ip)
+
         if init_capture_hw:
             self.init_capture_hw()
 
@@ -132,29 +231,6 @@ class RadarDCA(CaptureHardware):
         # Set init flag (they could call after class initialization)
         self.init_capture_hw = True
 
-    def start_tcpdump_capture(self, outfile: pathlib.Path) -> None:
-        self._cap_tcpdump = subprocess.Popen(
-            [
-                self.TCPDUMP_BIN_PATH,
-                "-i",
-                self._dca_eth_interface,
-                "-qtn",
-                f"udp and host {self._dca_ip}",
-                "-w",
-                outfile,
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-    def stop_tcpdump_capture(self) -> None:
-        if not self._cap_tcpdump:
-            return
-
-        self._cap_tcpdump.send_signal(signal.SIGUSR2)  # Flush buffer
-        self._cap_tcpdump.send_signal(signal.SIGINT)  # Stop capturing
-        self._cap_tcpdump.wait()  # Wait for tcpdump
-
     @logger.catch(reraise=True)
     def prepare_capture(self) -> None:
         if not self._init_capture_hw:
@@ -165,8 +241,8 @@ class RadarDCA(CaptureHardware):
         if not self.base_path:
             raise ValueError("Base path is not set")
 
-        # Start DCA tcpdump
-        self.start_tcpdump_capture(outfile=self.base_path / self.PCAP_OUTPUT_FILENAME)
+        # Start tcpdump
+        self.tcpdump.start_file_capture(self.base_path / self.PCAP_OUTPUT_FILENAME)
 
         # Start DCA termination catcher
         self._catcher = subprocess.Popen(
@@ -197,7 +273,7 @@ class RadarDCA(CaptureHardware):
     def stop_capture(self) -> None:
         if self._catcher:
             self._catcher.wait()
-        self.stop_tcpdump_capture()
+        self.tcpdump.stop()
 
     def dump_config(self) -> None:
         if not self.base_path:
