@@ -326,9 +326,10 @@ class RadarDCA(CaptureHardware):
             raise ValueError(f"Host IP {host_ip} not found in {dca_eth_interface}")
 
         # DCA1000EVM
-        self.dca = mmwavecapture.dca1000.DCA1000()
-        self.dca.config.dca_ip = self._dca_ip
-        self.dca.config.dca_config_port = self._dca_config_port
+        self.dca_config = mmwavecapture.dca1000.DCA1000Config()
+        self.dca_config.dca_ip = self._dca_ip
+        self.dca_config.dca_config_port = self._dca_config_port
+        self.dca = mmwavecapture.dca1000.DCA1000(self.dca_config)
 
         # Radar
         self.radar = mmwavecapture.radar.Radar(

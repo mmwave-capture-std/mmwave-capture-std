@@ -192,8 +192,8 @@ class DCA1000:
 
         return wrapped
 
-    def __init__(self) -> None:
-        self.config = DCA1000Config()
+    def __init__(self, config: DCA1000Config) -> None:
+        self.config = config if config else DCA1000Config()
         self.socks = {}
 
         self.socks = self._init_sockets()
