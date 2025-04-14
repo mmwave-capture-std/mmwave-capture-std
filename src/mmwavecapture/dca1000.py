@@ -113,6 +113,10 @@ class DCA1000Config:
         # This is the IP address of the host computer
         return self._config["ethernetConfigUpdate"]["systemIPAddress"]
 
+    @host_ip.setter
+    def host_ip(self, ip: str) -> None:
+        self._config["ethernetConfigUpdate"]["systemIPAddress"] = ip
+
     @property
     def dca_ip(self) -> str:
         return self._config["ethernetConfig"]["DCA1000IPAddress"]
