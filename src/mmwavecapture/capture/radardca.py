@@ -143,39 +143,112 @@ class RadarPacketAggregator:
     def __init__(self, radar_frame_iq_size: int, callbacks: Any = None):
         self.data = disspcap.DcaDataStreaming()
         self.radar_frame_iq_size = radar_frame_iq_size
+        self.samples_per_packet = 364  # 1456 bytes / 4 bytes per complex sampl
+        self.at_most_waiting_packets = (
+            self.radar_frame_iq_size + self.samples_per_packet - 1
+        ) // self.samples_per_packet
         self.callbacks = callbacks if callbacks else []
-        if not instance(self.callbacks, list):
+        if not isinstance(self.callbacks, list):
             logger.warning("Callbacks should be a list. Converting to list.")
             self.callbacks = [self.callbacks]
 
+        # Initialize tracking variables
+        self.synced = False
+        self.expected_seq_id = None
+        self.next_frame_start_id = None
+        self.samples_to_discard = 0
+
+    def find_next_frame_start_id(self, seq_id):
+        """
+        Calculate the next sequence ID that will start a new frame and
+        how many samples to discard from that packet.
+
+        Returns:
+            tuple: (next_frame_start_id, samples_to_discard)
+        """
+        samples_per_packet = 364
+
+        # Calculate total samples up to this sequence
+        total_samples_before = (seq_id - 1) * samples_per_packet
+
+        # Calculate position in frame and samples to next boundary
+        position_in_frame = total_samples_before % self.radar_frame_iq_size
+        samples_to_next_boundary = self.radar_frame_iq_size - position_in_frame
+
+        # Calculate how many packets until the next frame starts
+        packets_to_next_boundary = (samples_to_next_boundary - 1) // samples_per_packet
+
+        # The sequence ID that will start the next frame
+        next_frame_start_id = seq_id + packets_to_next_boundary
+
+        # Calculate how many samples to discard from the packet at the next frame start
+        # This handles packets that cross frame boundaries
+        if samples_to_next_boundary < samples_per_packet:
+            discard_samples = samples_per_packet - samples_to_next_boundary
+        else:
+            discard_samples = 0
+
+        return next_frame_start_id, discard_samples
+
     def push_packet(self, header: bytes, data: bytes):
         packet = disspcap.Packet(header=header, data=data)
-
-        # Ignore other packets
         if not packet.dca_raw:
             return
 
-        # Add raw data into DCA aggregator
-        # XXX: Assume the packet is not corrupted
-        self.data.add(packet.dca_raw)
+        current_seq_id = packet.dca_raw.seq_id
 
-        # Check if we have enough data for a radar frame
-        if len(self.data) < self.radar_frame_iq_size:
-            # Not enough data yet
+        # Out of order
+        if self.expected_seq_id and self.expected_seq_id != current_seq_id:
+            self.synced = False
+            self.next_frame_start_id = None
+            logger.warning(
+                f"Out of order packet: expected {self.expected_seq_id}, got {current_seq_id}"
+            )
+
+            self.expected_seq_id = None
+
+        # Handle packet sychronization
+        if not self.synced:
+            if (
+                not self.next_frame_start_id
+                or abs(current_seq_id - self.next_frame_start_id)
+                > self.at_most_waiting_packets
+            ):
+                self.next_frame_start_id, self.samples_to_discard = (
+                    self.find_next_frame_start_id(current_seq_id)
+                )
+
+            # Only process if this is exactly at a frame start
+            if self.next_frame_start_id == current_seq_id:
+                self.data.clear()
+                self.data.add(packet.dca_raw)
+
+                # If we need to discard samples from this packet to align with the frame boundary
+                if self.samples_to_discard > 0:
+                    self.data.clear(self.samples_to_discard)
+
+                self.synced = True
+                self.expected_seq_id = current_seq_id + 1
+
             return
 
-        # Process a radar frame
-        frame = self.data.get_numpy()[: self.radar_frame_iq_size]
-        md = {"dtype": "complex64", "shape": frame.shape, "timestamp": time.time()}
+        # Normal case: We got the packet we expected
+        self.expected_seq_id = current_seq_id + 1
+        self.data.add(packet.dca_raw)
 
-        # Send out the radar frame
-        for callback in self.callbacks:
-            if callable(callback):
-                callback(md, frame)
+        # Check if we have a complete frame
+        if len(self.data) >= self.radar_frame_iq_size:
+            # Extract exactly one frame
+            frame = self.data.get_numpy()[: self.radar_frame_iq_size]
+            md = {"dtype": "complex64", "shape": frame.shape, "timestamp": time.time()}
 
-        # Clear a frame from the data
-        # XXX: Assume that all the callback have sent the data
-        self.data.clear(self.radar_frame_iq_size)
+            # Process frame with callbacks
+            for callback in self.callbacks:
+                if callable(callback):
+                    callback(md, frame)
+
+            # Remove exactly one frame worth of data
+            self.data.clear(self.radar_frame_iq_size)
 
 
 class TcpdumpCapture:
