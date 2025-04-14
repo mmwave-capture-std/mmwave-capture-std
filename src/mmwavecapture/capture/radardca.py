@@ -50,11 +50,103 @@ import mmwavecapture.radar
 from mmwavecapture.capture.capture import CaptureHardware
 
 
+class ZmqPublisher:
+    """
+    A class to publish data (metadata + NumPy array) via ZeroMQ PUSH socket.
+
+    Handles sending with copy=False, track=True and ensures the send
+    completes before returning from the publish method.
+    """
+
+    def __init__(self, zmq_address: str):
+        """
+        Initializes the ZMQ context and socket.
+
+        Args:
+            zmq_address: The address string for ZMQ socket binding (e.g., "tcp://*:5556").
+        """
+        logger.info(f"Initializing ZmqPublisher for address: {zmq_address}")
+        self.zmq_address = zmq_address
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.PUSH)
+
+        # Set linger to 0 to discard messages on close immediately if needed
+        self._socket.setsockopt(zmq.LINGER, 0)
+
+        # Set high water mark (optional)
+        self._socket.set_hwm(1000)
+
+        logger.info(f"Binding ZMQ PUSH socket to {self.zmq_address}")
+        self._socket.bind(self.zmq_address)
+
+    def publish(self, md: Dict[str, Any], frame: np.ndarray) -> None:
+        """
+        Publishes metadata and a NumPy frame via ZeroMQ.
+
+        Sends metadata as JSON, then the frame buffer without copying.
+        Waits until ZeroMQ is finished with the frame buffer before returning.
+
+        Args:
+            md: A dictionary containing metadata (e.g., dtype, shape).
+            frame: The NumPy array data to send.
+        """
+        try:
+            # Ensure frame is C-contiguous for zero-copy. Often true, but good practice.
+            # If performance is critical and arrays are often non-contiguous,
+            # this copy might negate zero-copy benefits. Profile if needed.
+            if not frame.flags["C_CONTIGUOUS"]:
+                logger.warning(
+                    "Frame is not C-contiguous. Making a copy before sending."
+                )
+                frame = np.ascontiguousarray(frame)  # This forces a copy!
+
+            logger.debug(
+                f"ZMQ Publishing: Shape={md.get('shape')}, Dtype={md.get('dtype')}"
+            )
+
+            # 1. Send metadata (JSON) - mark as not the last part
+            self._socket.send_json(md, flags=zmq.SNDMORE)
+
+            # 2. Send NumPy array data (no copy, track completion) - this IS the last part
+            tracker = self._socket.send(frame, copy=False, track=True)
+
+            # 3. Wait for ZMQ to finish using the buffer *within the publisher*
+            #    This ensures the buffer is valid until the publisher returns.
+            wait_start_time = time.time()
+            while not tracker.done:
+                time.sleep(0.0001)  # Sleep 100 microseconds to yield CPU
+
+            wait_duration = time.time() - wait_start_time
+            if wait_duration > 0.01:  # Log if waiting takes unexpectedly long
+                logger.warning(f"ZMQ tracker wait took {wait_duration:.4f} seconds.")
+            else:
+                logger.debug(f"ZMQ tracker done (waited {wait_duration:.4f} s).")
+
+        except zmq.ZMQError as e:
+            logger.error(f"ZMQ Error during publish to {self.zmq_address}: {e}")
+            # Optional: Implement reconnect logic or raise the exception
+        except Exception as e:
+            # Catch other potential errors (e.g., JSON serialization)
+            logger.exception(f"Unexpected error during ZMQ publish: {e}")
+
+    def close(self) -> None:
+        """Closes the ZMQ socket and terminates the context."""
+        logger.info(f"Closing ZMQ publisher socket for {self.zmq_address}")
+        if self._socket and not self._socket.closed:
+            self._socket.close()
+        logger.info(f"Terminating ZMQ context for {self.zmq_address}")
+        if self._context and not self._context.closed:
+            self._context.term()
+
+
 class RadarPacketAggregator:
     def __init__(self, radar_frame_iq_size: int, callbacks: Any = None):
         self.data = disspcap.DcaDataStreaming()
         self.radar_frame_iq_size = radar_frame_iq_size
-        self.callbacks = callbacks
+        self.callbacks = callbacks if callbacks else []
+        if not instance(self.callbacks, list):
+            logger.warning("Callbacks should be a list. Converting to list.")
+            self.callbacks = [self.callbacks]
 
     def push_packet(self, header: bytes, data: bytes):
         packet = disspcap.Packet(header=header, data=data)
@@ -74,7 +166,7 @@ class RadarPacketAggregator:
 
         # Process a radar frame
         frame = self.data.get_numpy()[: self.radar_frame_iq_size]
-        md = {"dtype": "complex64", "shape": frame.shape}
+        md = {"dtype": "complex64", "shape": frame.shape, "timestamp": time.time()}
 
         # Send out the radar frame
         for callback in self.callbacks:
@@ -200,6 +292,9 @@ class RadarDCA(CaptureHardware):
         host_ip: str = "192.168.33.30",
         capture_frames: int = 100,
         init_capture_hw: bool = True,
+        enable_save_pcap: bool = True,
+        enable_zmq_streaming: bool = False,
+        zmq_stream_address: str = "tcp://*:5556",
         **kwargs: Dict[str, Any],
     ) -> None:
         self.hw_name = hw_name
@@ -212,6 +307,9 @@ class RadarDCA(CaptureHardware):
         self._host_ip = host_ip
         self._capture_frames = capture_frames
         self._init_capture_hw = init_capture_hw
+        self._enable_save_pcap = enable_save_pcap
+        self._enable_zmq_streaming = enable_zmq_streaming
+        self._zmq_stream_address = zmq_stream_address
 
         # Process handles
         self._catcher = None
@@ -249,7 +347,16 @@ class RadarDCA(CaptureHardware):
 
         # Tcpdump
         self.tcpdump = TcpdumpCapture(self.TCPDUMP_BIN_PATH, dca_eth_interface, dca_ip)
-        self.aggregator = RadarPacketAggregator(self.radar_frame_iq_size)
+
+        # Callbacks
+        self.callbacks = []
+        if self._enable_zmq_streaming:
+            self.zmq_publisher = ZmqPublisher(self._zmq_stream_address)
+            self.callbacks.append(self.zmq_publisher.publish)
+
+        self.aggregator = RadarPacketAggregator(
+            self.radar_frame_iq_size, self.callbacks
+        )
 
         if init_capture_hw:
             self.init_capture_hw()
@@ -284,7 +391,12 @@ class RadarDCA(CaptureHardware):
             raise ValueError("Base path is not set")
 
         # Start tcpdump
-        self.tcpdump.start_file_capture(self.base_path / self.PCAP_OUTPUT_FILENAME)
+        if self._enable_save_pcap:
+            self.tcpdump.start_file_capture(self.base_path / self.PCAP_OUTPUT_FILENAME)
+
+        # Start streaming
+        if self._enable_zmq_streaming:
+            self.tcpdump.start_stream_capture(self.aggregator)
 
         # Start DCA termination catcher
         self._catcher = subprocess.Popen(
