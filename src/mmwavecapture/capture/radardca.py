@@ -44,9 +44,46 @@ from typing import Any, Dict
 import netifaces
 from loguru import logger
 
+import disspcap
 import mmwavecapture.dca1000
 import mmwavecapture.radar
 from mmwavecapture.capture.capture import CaptureHardware
+
+
+class RadarPacketAggregator:
+    def __init__(self, radar_frame_iq_size: int, callbacks: Any = None):
+        self.data = disspcap.DcaDataStreaming()
+        self.radar_frame_iq_size = radar_frame_iq_size
+        self.callbacks = callbacks
+
+    def push_packet(self, header: bytes, data: bytes):
+        packet = disspcap.Packet(header=header, data=data)
+
+        # Ignore other packets
+        if not packet.dca_raw:
+            return
+
+        # Add raw data into DCA aggregator
+        # XXX: Assume the packet is not corrupted
+        self.data.add(packet.dca_raw)
+
+        # Check if we have enough data for a radar frame
+        if len(self.data) < self.radar_frame_iq_size:
+            # Not enough data yet
+            return
+
+        # Process a radar frame
+        frame = self.data.get_numpy()[: self.radar_frame_iq_size]
+        md = {"dtype": "complex64", "shape": frame.shape}
+
+        # Send out the radar frame
+        for callback in self.callbacks:
+            if callable(callback):
+                callback(md, frame)
+
+        # Clear a frame from the data
+        # XXX: Assume that all the callback have sent the data
+        self.data.clear(self.radar_frame_iq_size)
 
 
 class TcpdumpCapture:
@@ -59,7 +96,7 @@ class TcpdumpCapture:
         self.stream_thread = None
         self.stop_event = threading.Event()
 
-    def start_file_capture(self, outfile: Path):
+    def start_file_capture(self, outfile: pathlib.Path):
         self.file_capture_proc = subprocess.Popen(
             [
                 self.tcpdump_bin,
@@ -206,8 +243,13 @@ class RadarDCA(CaptureHardware):
             capture_frames=self._capture_frames,
         )
 
+        # Radar config
+        radar_config = mmwavecapture.radar.RadarCoreConfig(self._radar_config_filename)
+        self.radar_frame_iq_size = radar_config.frame_iq_size
+
         # Tcpdump
         self.tcpdump = TcpdumpCapture(self.TCPDUMP_BIN_PATH, dca_eth_interface, dca_ip)
+        self.aggregator = RadarPacketAggregator(self.radar_frame_iq_size)
 
         if init_capture_hw:
             self.init_capture_hw()
