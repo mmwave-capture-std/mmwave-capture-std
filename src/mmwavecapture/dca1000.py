@@ -225,8 +225,7 @@ class DCA1000:
         data: bytes = ...,
         timeout: float = ...,
         return_raw_status: Literal[False] = ...,
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     @overload
     def _send_dca_command(
@@ -235,8 +234,7 @@ class DCA1000:
         data: bytes = ...,
         timeout: float = ...,
         return_raw_status: Literal[True] = ...,
-    ) -> int:
-        ...
+    ) -> int: ...
 
     def _send_dca_command(
         self,
