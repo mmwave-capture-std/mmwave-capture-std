@@ -113,6 +113,10 @@ class DCA1000Config:
         # This is the IP address of the host computer
         return self._config["ethernetConfigUpdate"]["systemIPAddress"]
 
+    @host_ip.setter
+    def host_ip(self, ip: str) -> None:
+        self._config["ethernetConfigUpdate"]["systemIPAddress"] = ip
+
     @property
     def dca_ip(self) -> str:
         return self._config["ethernetConfig"]["DCA1000IPAddress"]
@@ -192,8 +196,8 @@ class DCA1000:
 
         return wrapped
 
-    def __init__(self) -> None:
-        self.config = DCA1000Config()
+    def __init__(self, config: DCA1000Config = None) -> None:
+        self.config = config if config else DCA1000Config()
         self.socks = {}
 
         self.socks = self._init_sockets()
@@ -225,8 +229,7 @@ class DCA1000:
         data: bytes = ...,
         timeout: float = ...,
         return_raw_status: Literal[False] = ...,
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     @overload
     def _send_dca_command(
@@ -235,8 +238,7 @@ class DCA1000:
         data: bytes = ...,
         timeout: float = ...,
         return_raw_status: Literal[True] = ...,
-    ) -> int:
-        ...
+    ) -> int: ...
 
     def _send_dca_command(
         self,

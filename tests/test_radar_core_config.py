@@ -20,5 +20,6 @@ def test_radar_core_config(radar_config):
     assert rcc.tx == 2
     assert rcc.rx == 4
     assert rcc.samples == 256
+    assert rcc.frame_iq_size == 16 * 2 * 4 * 256
     assert rcc.antenna_shape == (-1, 16, 2, 4, 256)
     assert rcc.virtual_shape == (-1, 16, 8, 256)
