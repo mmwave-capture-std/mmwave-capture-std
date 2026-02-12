@@ -191,11 +191,9 @@ class RadarPacketAggregator:
         return next_frame_start_id, discard_samples
 
     def push_packet(self, header: bytes, data: bytes):
-        packet = disspcap.Packet(header=header, data=data)
-        if not packet.dca_raw:
-            return
+        packet = disspcap.DcaRaw(data)
 
-        current_seq_id = packet.dca_raw.seq_id
+        current_seq_id = packet.seq_id
 
         # Out of order
         if self.expected_seq_id and self.expected_seq_id != current_seq_id:
@@ -221,7 +219,7 @@ class RadarPacketAggregator:
             # Only process if this is exactly at a frame start
             if self.next_frame_start_id == current_seq_id:
                 self.data.clear()
-                self.data.add(packet.dca_raw)
+                self.data.add(packet)
 
                 # If we need to discard samples from this packet to align with the frame boundary
                 if self.samples_to_discard > 0:
@@ -234,7 +232,7 @@ class RadarPacketAggregator:
 
         # Normal case: We got the packet we expected
         self.expected_seq_id = current_seq_id + 1
-        self.data.add(packet.dca_raw)
+        self.data.add(packet)
 
         # Check if we have a complete frame
         if len(self.data) >= self.radar_frame_iq_size:
