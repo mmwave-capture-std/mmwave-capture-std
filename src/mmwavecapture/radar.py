@@ -93,6 +93,9 @@ class RadarCoreConfig:
         #: Number of ADC samples per chirp
         self.samples: int = int(self._config["profileCfg"][9])
 
+        #: Frame I/Q size
+        self.frame_iq_size: int = self.chirps * self.tx * self.rx * self.samples
+
         #: Shape of the raw data considering TX and RX antennas.
         #:
         #: If the number of frames is 0, the first dimension will be -1
